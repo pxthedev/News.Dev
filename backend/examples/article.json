@@ -1,0 +1,17 @@
+{
+  "id": "exemplo-editorial",
+  "title": "Matéria de demonstração do Radar",
+  "summary": ["Este conteúdo é fictício.", "Serve para validar a integração.", "Substitua por conteúdo editorial verificado."],
+  "body": "Esta é uma matéria fictícia para testar o backend.\n\nNão representa uma notícia real.",
+  "category": "programacao",
+  "detectedAt": "2026-11-14T10:00:00Z",
+  "publishedAt": "2026-11-14T10:05:00Z",
+  "sources": [{"name": "Fonte de demonstração", "url": "https://example.com"}],
+  "sourceCount": 1,
+  "firstInBrazil": false,
+  "urgency": "normal",
+  "confirmed": true,
+  "readingMinutes": 1,
+  "entities": [],
+  "trendingTag": "desenvolvimento"
+}

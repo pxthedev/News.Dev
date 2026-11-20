@@ -1,0 +1,11 @@
+target
+.git
+.env
+*.log
+credentials
+*.key
+*service-account*.json
+
+.env*
+credentials/
+*.log

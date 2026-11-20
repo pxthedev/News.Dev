@@ -1,0 +1,8 @@
+steps:
+  - name: gcr.io/cloud-builders/docker
+    args: [build, -t, '${_IMAGE}', .]
+images: ['${_IMAGE}']
+substitutions:
+  _IMAGE: southamerica-east1-docker.pkg.dev/SEU_PROJETO/radar/radar-api:latest
+options:
+  logging: CLOUD_LOGGING_ONLY

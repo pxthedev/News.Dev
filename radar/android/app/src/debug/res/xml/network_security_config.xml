@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!-- Debug permite também o IP LAN do computador durante desenvolvimento. -->
+    <base-config cleartextTrafficPermitted="true" />
+</network-security-config>

@@ -1,0 +1,37 @@
+services:
+  api:
+    build: .
+    environment:
+      SUPABASE_DB_URL: ${SUPABASE_DB_URL:?Defina SUPABASE_DB_URL no .env}
+      SUPABASE_DB_USER: ${SUPABASE_DB_USER:?Defina SUPABASE_DB_USER no .env}
+      SUPABASE_DB_PASSWORD: ${SUPABASE_DB_PASSWORD:?Defina SUPABASE_DB_PASSWORD no .env}
+      SUPABASE_URL: ${SUPABASE_URL:-}
+      SUPABASE_PUBLISHABLE_KEY: ${SUPABASE_PUBLISHABLE_KEY:-}
+      DB_POOL_SIZE: ${DB_POOL_SIZE:-5}
+      DB_MIGRATIONS_ENABLED: ${DB_MIGRATIONS_ENABLED:-true}
+      PUSH_WEBHOOK_URL: ${PUSH_WEBHOOK_URL:-}
+      PUSH_WEBHOOK_SECRET: ${PUSH_WEBHOOK_SECRET:-}
+      JWT_SECRET: ${JWT_SECRET:?Defina JWT_SECRET no .env}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000}
+      API_DOCS_ENABLED: ${API_DOCS_ENABLED:-false}
+      SMTP_HOST: ${SMTP_HOST:-mailpit}
+      SMTP_PORT: ${SMTP_PORT:-1025}
+      SMTP_USERNAME: ${SMTP_USERNAME:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_AUTH: ${SMTP_AUTH:-false}
+      SMTP_STARTTLS: ${SMTP_STARTTLS:-false}
+      MAIL_FROM: ${MAIL_FROM:-radar@localhost}
+      PASSWORD_RESET_URL: ${PASSWORD_RESET_URL:-radar://recuperar-senha}
+      DELIVERY_ENABLED: ${DELIVERY_ENABLED:-false}
+      INGESTION_ENABLED: ${INGESTION_ENABLED:-false}
+      RSS_ALLOWED_HOSTS: ${RSS_ALLOWED_HOSTS:-}
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+  mailpit:
+    image: axllent/mailpit:v1
+    profiles: [local-mail]
+    ports:
+      - "127.0.0.1:8025:8025"

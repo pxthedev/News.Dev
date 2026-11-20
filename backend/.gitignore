@@ -1,0 +1,7 @@
+target/
+.env
+*.log
+.idea/
+*.iml
+credentials/
+*service-account*.json
