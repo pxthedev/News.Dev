@@ -1,0 +1,146 @@
+name: Build iPhone IPA
+on:
+  workflow_dispatch:
+    inputs:
+      api_url:
+        description: 'URL HTTPS do backend; vazio usa a Discloud no modo Sideloadly'
+        required: false
+        default: ''
+      export_method:
+        description: 'Assinar via Sideloadly ou exportar com um perfil da Apple'
+        required: true
+        type: choice
+        default: sideloadly
+        options: [sideloadly, development, ad-hoc]
+permissions:
+  contents: read
+jobs:
+  ios:
+    runs-on: macos-15
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.44.1'
+          channel: stable
+          cache: true
+      - name: Validar assinatura e importar certificado
+        if: inputs.export_method != 'sideloadly'
+        shell: bash
+        env:
+          CERTIFICATE_BASE64: ${{ secrets.IOS_CERTIFICATE_P12_BASE64 }}
+          CERTIFICATE_PASSWORD: ${{ secrets.IOS_CERTIFICATE_PASSWORD }}
+          PROFILE_BASE64: ${{ secrets.IOS_PROVISIONING_PROFILE_BASE64 }}
+        run: |
+          set -euo pipefail
+          if [[ -z "$CERTIFICATE_BASE64" || -z "$PROFILE_BASE64" ]]; then
+            echo 'Configure IOS_CERTIFICATE_P12_BASE64, IOS_CERTIFICATE_PASSWORD e IOS_PROVISIONING_PROFILE_BASE64 em Repository secrets.'
+            exit 1
+          fi
+          KEYCHAIN_PASSWORD=$(openssl rand -hex 32)
+          KEYCHAIN_PATH="$RUNNER_TEMP/radar-signing.keychain-db"
+          printf '%s' "$CERTIFICATE_BASE64" | base64 --decode > "$RUNNER_TEMP/certificate.p12"
+          printf '%s' "$PROFILE_BASE64" | base64 --decode > "$RUNNER_TEMP/profile.mobileprovision"
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security import "$RUNNER_TEMP/certificate.p12" -P "$CERTIFICATE_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH" >/dev/null
+          security list-keychains -d user -s "$KEYCHAIN_PATH" login.keychain-db
+          security cms -D -i "$RUNNER_TEMP/profile.mobileprovision" > "$RUNNER_TEMP/profile.plist"
+          python3 - <<'PY'
+          import os, plistlib, re, shutil, datetime
+          from pathlib import Path
+          root=Path(os.environ['RUNNER_TEMP'])
+          profile=plistlib.loads((root/'profile.plist').read_bytes())
+          if not profile.get('ProvisionedDevices'):
+              raise SystemExit('O profile precisa incluir o UDID do iPhone para instalação por cabo.')
+          if profile['ExpirationDate'] <= datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None):
+              raise SystemExit('O provisioning profile está expirado.')
+          uuid=profile['UUID']; team=profile['TeamIdentifier'][0]
+          bundle=profile['Entitlements']['application-identifier'].split('.',1)[1]
+          if not re.fullmatch(r'[A-Fa-f0-9-]+',uuid) or not re.fullmatch(r'[A-Z0-9]+',team) or '*' in bundle:
+              raise SystemExit('Use um provisioning profile válido com App ID explícito.')
+          dest=Path.home()/'Library/MobileDevice/Provisioning Profiles'
+          dest.mkdir(parents=True,exist_ok=True)
+          shutil.copyfile(root/'profile.mobileprovision',dest/(uuid+'.mobileprovision'))
+          with open(os.environ['GITHUB_ENV'],'a') as env:
+              env.write(f'APPLE_TEAM_ID={team}\nIOS_PROFILE_UUID={uuid}\nIOS_BUNDLE_ID={bundle}\n')
+          PY
+          SIGNING_IDENTITY=$(security find-identity -v -p codesigning "$KEYCHAIN_PATH" | sed -nE 's/^[[:space:]]*[0-9]+\) ([A-F0-9]{40}) .*/\1/p' | head -n 1)
+          if [[ -z "$SIGNING_IDENTITY" ]]; then echo 'O P12 não contém uma identidade de assinatura válida.'; exit 1; fi
+          echo "IOS_SIGNING_IDENTITY=$SIGNING_IDENTITY" >> "$GITHUB_ENV"
+      - name: Gerar IPA
+        working-directory: radar
+        shell: bash
+        env:
+          API_URL: ${{ inputs.api_url }}
+          SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
+          GOOGLE_IOS_CLIENT_ID: ${{ vars.GOOGLE_IOS_CLIENT_ID }}
+          GOOGLE_WEB_CLIENT_ID: ${{ vars.GOOGLE_WEB_CLIENT_ID }}
+          EXPORT_METHOD: ${{ inputs.export_method }}
+        run: |
+          set -euo pipefail
+          if [[ "$EXPORT_METHOD" == sideloadly ]]; then
+            API_URL="${API_URL:-https://appnewsai.discloud.app}"
+          fi
+          if [[ -n "$API_URL" && "$API_URL" != https://* ]]; then echo 'Informe uma URL HTTPS para o backend.'; exit 1; fi
+          flutter pub get
+          python3 - <<'PY'
+          import os, plistlib
+          from pathlib import Path
+          if os.environ['EXPORT_METHOD'] != 'sideloadly':
+              options={'method':os.environ['EXPORT_METHOD'],'teamID':os.environ['APPLE_TEAM_ID'],
+                  'signingStyle':'manual','signingCertificate':os.environ['IOS_SIGNING_IDENTITY'],
+                  'provisioningProfiles':{os.environ['IOS_BUNDLE_ID']:os.environ['IOS_PROFILE_UUID']}}
+              Path(os.environ['RUNNER_TEMP'],'ExportOptions.plist').write_bytes(plistlib.dumps(options))
+          client_id=os.environ.get('GOOGLE_IOS_CLIENT_ID','')
+          if client_id:
+              if not client_id.endswith('.apps.googleusercontent.com'):
+                  raise SystemExit('GOOGLE_IOS_CLIENT_ID inválido')
+              info_path=Path('ios/Runner/Info.plist')
+              info=plistlib.loads(info_path.read_bytes())
+              scheme='.'.join(reversed(client_id.split('.')))
+              types=info.setdefault('CFBundleURLTypes',[])
+              if not any(scheme in t.get('CFBundleURLSchemes',[]) for t in types):
+                  types.append({'CFBundleTypeRole':'Editor','CFBundleURLSchemes':[scheme]})
+              info['GIDClientID']=client_id
+              info_path.write_bytes(plistlib.dumps(info,sort_keys=False))
+          PY
+          build_args=(
+            --release --build-number="$GITHUB_RUN_NUMBER"
+            "--dart-define=RADAR_API_URL=$API_URL"
+            "--dart-define=SUPABASE_URL=$SUPABASE_URL"
+            "--dart-define=SUPABASE_PUBLISHABLE_KEY=$SUPABASE_PUBLISHABLE_KEY"
+            "--dart-define=GOOGLE_IOS_CLIENT_ID=$GOOGLE_IOS_CLIENT_ID"
+            "--dart-define=GOOGLE_WEB_CLIENT_ID=$GOOGLE_WEB_CLIENT_ID"
+          )
+          if [[ "$EXPORT_METHOD" == sideloadly ]]; then
+            flutter build ios --no-codesign "${build_args[@]}"
+            mkdir -p "$RUNNER_TEMP/unsigned/Payload" build/ios/ipa
+            ditto build/ios/iphoneos/Runner.app "$RUNNER_TEMP/unsigned/Payload/Runner.app"
+            ditto -c -k --keepParent "$RUNNER_TEMP/unsigned/Payload" build/ios/ipa/news.dev-Sideloadly.ipa
+            unzip -tq build/ios/ipa/news.dev-Sideloadly.ipa
+          else
+            export FLUTTER_XCODE_CODE_SIGN_STYLE=Manual
+            export FLUTTER_XCODE_DEVELOPMENT_TEAM="$APPLE_TEAM_ID"
+            export FLUTTER_XCODE_PRODUCT_BUNDLE_IDENTIFIER="$IOS_BUNDLE_ID"
+            export FLUTTER_XCODE_PROVISIONING_PROFILE_SPECIFIER="$IOS_PROFILE_UUID"
+            export FLUTTER_XCODE_CODE_SIGN_IDENTITY="$IOS_SIGNING_IDENTITY"
+            flutter build ipa "${build_args[@]}" --export-options-plist="$RUNNER_TEMP/ExportOptions.plist"
+          fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: radar-iphone-ipa
+          path: radar/build/ios/ipa/*.ipa
+          if-no-files-found: error
+          retention-days: 7
+      - name: Limpar credenciais do runner
+        if: always() && inputs.export_method != 'sideloadly'
+        shell: bash
+        run: |
+          security delete-keychain "$RUNNER_TEMP/radar-signing.keychain-db" || true
+          rm -f "$RUNNER_TEMP/certificate.p12" "$RUNNER_TEMP/profile.mobileprovision" "$RUNNER_TEMP/profile.plist"
+          if [[ -n "${IOS_PROFILE_UUID:-}" ]]; then rm -f "$HOME/Library/MobileDevice/Provisioning Profiles/$IOS_PROFILE_UUID.mobileprovision"; fi
