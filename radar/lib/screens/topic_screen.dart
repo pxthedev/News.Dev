@@ -1,3 +1,5 @@
+import '../l10n/app_copy.dart';
+
 import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -85,7 +87,7 @@ class _TopicScreenState extends State<TopicScreen> {
       builder: (ctx) => Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(widget.category.fullName, style: RText.headline),
+          Text(context.tr(widget.category.fullName), style: RText.headline),
           const SizedBox(height: 16),
           RButton(
             'Silenciar alertas deste tópico',
@@ -253,9 +255,9 @@ class _TopicHeader extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 18),
-          Semantics(header: true, child: Text(c.fullName, style: RText.title1)),
+          Semantics(header: true, child: Text(context.tr(c.fullName), style: RText.title1)),
           const SizedBox(height: 4),
-          Text(c.description, style: RText.subheadline.withColor(RColors.textSecondary)),
+          Text(context.tr(c.description), style: RText.subheadline.withColor(RColors.textSecondary)),
           const SizedBox(height: 16),
           Row(
             children: [
@@ -290,7 +292,7 @@ class _MiniStat extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(value, style: RText.title3),
-            Text(label, style: RText.caption1.withColor(RColors.textSecondary)),
+            Text(context.tr(label), style: RText.caption1.withColor(RColors.textSecondary)),
           ],
         ),
       ),

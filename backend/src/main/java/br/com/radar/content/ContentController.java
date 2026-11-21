@@ -84,6 +84,24 @@ public class ContentController {
     return translations.translate(repo.find(id), language);
   }
 
+  @GetMapping("/articles/headline-translations")
+  Map<String, String> headlineTranslations(
+      @AuthenticationPrincipal Jwt jwt,
+      @RequestParam @Size(max = 1600) String ids,
+      @RequestParam String language) {
+    if (identities.user(jwt.getSubject()).getString("email") == null)
+      throw new ApiException(
+          org.springframework.http.HttpStatus.FORBIDDEN,
+          "account_required",
+          "Entre com uma conta para traduzir matérias.");
+    var articleIds = new LinkedHashSet<>(Arrays.asList(ids.split(",")));
+    if (articleIds.size() > 15
+        || articleIds.stream().anyMatch(id -> !id.matches("[a-z0-9-]{1,100}"))) {
+      throw ApiException.invalid("Informe até 15 identificadores válidos.");
+    }
+    return translations.headlines(repo.byIds(List.copyOf(articleIds)), language);
+  }
+
   @GetMapping("/articles")
   Map<String, Object> articles(@RequestParam @Size(max = 10100) String ids) {
     return Map.of("items", repo.byIds(ids.isBlank() ? List.of() : Arrays.asList(ids.split(","))));

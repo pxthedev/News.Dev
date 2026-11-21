@@ -305,6 +305,22 @@ class Article {
   final List<Entity> entities;
   final String? trendingTag;
 
+  bool get isInternationalRss =>
+      id.startsWith('rss-') &&
+      sources.length == 1 &&
+      const {
+        'TechCrunch',
+        'Ars Technica',
+        'WIRED',
+        'The Verge',
+        'MIT Technology Review',
+        'BBC News',
+        'The Guardian',
+        'The New York Times',
+        'dbt Labs',
+        'Microsoft Power BI',
+      }.contains(sources.single.name);
+
   String get kickerLabel => kicker ?? category.label;
 
   /// "The Verge, Wired +6"

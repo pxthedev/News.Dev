@@ -1,3 +1,5 @@
+import '../widgets/news.dart';
+
 import '../l10n/app_copy.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -6,7 +8,6 @@ import '../data/repository.dart';
 import '../routes.dart';
 import '../state/app_state.dart';
 import '../theme/tokens.dart';
-import '../utils/format.dart';
 import '../widgets/charts.dart';
 import '../widgets/primitives.dart';
 
@@ -155,10 +156,13 @@ class _SummaryCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(plural(count, 'matéria', 'matérias'), style: RText.title2),
+          Text(
+              context.tr(
+                  count == 1 ? '{n} matéria' : '{n} matérias', {'n': count}),
+              style: RText.title2),
           const SizedBox(height: 2),
           Text(
-            '$readMin min de leitura',
+            context.tr('{n} min de leitura', {'n': readMin}),
             style: RText.footnote.withColor(RColors.textSecondary),
           ),
         ],
@@ -176,9 +180,10 @@ class _SavedCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final color = article.category.color;
     final remaining = progress >= 1
-        ? 'Lida'
+        ? context.tr('Lida')
         : (progress > 0
-            ? '${article.remainingMinutes(progress)} min restantes'
+            ? context.tr(
+                '{n} min restantes', {'n': article.remainingMinutes(progress)})
             : '${article.readingMinutes} min');
     return MergeSemantics(
       child: Pressable(
@@ -199,7 +204,7 @@ class _SavedCard extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 8),
-              Text(article.title, style: RText.headline),
+              NewsHeadline(article, style: RText.headline),
               const SizedBox(height: 14),
               Row(
                 children: [

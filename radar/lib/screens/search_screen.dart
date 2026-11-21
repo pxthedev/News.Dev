@@ -183,7 +183,7 @@ class _SearchScreenState extends State<SearchScreen> {
                     if (showArticles && articles.isNotEmpty) ...[
                       Row(
                         children: [
-                          Expanded(child: Semantics(header: true, child: Text('Matérias', style: RText.title3))),
+                          Expanded(child: Semantics(header: true, child: Text(context.tr('Matérias'), style: RText.title3))),
                           Text(
                             plural(articles.length, 'resultado', 'resultados'),
                             style: RText.footnote.withColor(RColors.textSecondary),
@@ -197,19 +197,19 @@ class _SearchScreenState extends State<SearchScreen> {
                     if (nothing && _error == null)
                       EmptyState(
                         icon: Icons.search,
-                        title: 'Nada encontrado pra “$q”',
+                        title: context.tr('Nada encontrado pra “{query}”', {'query': q}),
                         message: 'Tente o nome de uma empresa, pessoa ou tópico.',
                       ),
                   ],
                   Row(
                     children: [
-                      Expanded(child: Semantics(header: true, child: Text('Buscas recentes', style: RText.title3))),
+                      Expanded(child: Semantics(header: true, child: Text(context.tr('Buscas recentes'), style: RText.title3))),
                       if (state.recentSearches.isNotEmpty)
                         Pressable(
                           onTap: state.clearRecentSearches,
                           child: Padding(
                             padding: const EdgeInsets.symmetric(vertical: 10),
-                            child: Text('Limpar', style: RText.subheadline.withColor(RColors.textSecondary)),
+                            child: Text(context.tr('Limpar'), style: RText.subheadline.withColor(RColors.textSecondary)),
                           ),
                         ),
                     ],
@@ -276,7 +276,7 @@ class _SearchScreenState extends State<SearchScreen> {
               style: RText.body,
               textInputAction: TextInputAction.search,
               decoration: InputDecoration.collapsed(
-                hintText: 'Empresas, pessoas e tópicos',
+                hintText: context.tr('Empresas, pessoas e tópicos'),
                 hintStyle: RText.body.withColor(RColors.textSecondary),
               ),
               onChanged: (_) => _onChanged(),

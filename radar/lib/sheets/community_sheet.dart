@@ -1,3 +1,5 @@
+import '../l10n/app_copy.dart';
+
 import 'package:material_ui/material_ui.dart';
 
 import '../state/app_state.dart';
@@ -36,7 +38,7 @@ class CommunitySheet extends StatelessWidget {
         const SizedBox(height: 16),
         const TintPill('Em breve', icon: Icons.auto_awesome),
         const SizedBox(height: 12),
-        Semantics(header: true, child: Text('Comunidade news.dev', style: RText.title2, textAlign: TextAlign.center)),
+        Semantics(header: true, child: Text(context.tr('Comunidade news.dev'), style: RText.title2, textAlign: TextAlign.center)),
         const SizedBox(height: 8),
         Text(
           'Debata os furos com quem vive de tecnologia. Entre na lista e ganhe acesso antecipado.',

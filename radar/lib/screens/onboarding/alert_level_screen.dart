@@ -1,3 +1,5 @@
+import '../../l10n/app_copy.dart';
+
 import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -119,9 +121,9 @@ class _LevelCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(title, style: RText.headline),
+                    Text(context.tr(title), style: RText.headline),
                     const SizedBox(height: 2),
-                    Text(description, style: RText.footnote.withColor(RColors.textSecondary)),
+                    Text(context.tr(description), style: RText.footnote.withColor(RColors.textSecondary)),
                   ],
                 ),
               ),

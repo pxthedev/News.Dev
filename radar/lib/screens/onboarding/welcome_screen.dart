@@ -1,3 +1,5 @@
+import '../../l10n/app_copy.dart';
+
 import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -35,7 +37,7 @@ class WelcomeScreen extends StatelessWidget {
                   const SizedBox(height: 18),
                   Semantics(
                       header: true,
-                      child: Text('Tecnologia, antes de todo mundo.',
+                      child: Text(context.tr('Tecnologia, antes de todo mundo.'),
                           style: RText.display)),
                   const SizedBox(height: 12),
                   Text(

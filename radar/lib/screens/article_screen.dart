@@ -1,5 +1,7 @@
 import 'dart:math' as math;
 
+import 'package:flutter/foundation.dart';
+
 import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -14,6 +16,7 @@ import '../theme/tokens.dart';
 import '../utils/format.dart';
 import '../widgets/primitives.dart';
 import '../l10n/app_copy.dart';
+import 'publisher_reader_screen.dart';
 
 /// 06 · Matéria
 class ArticleScreen extends StatefulWidget {
@@ -162,22 +165,8 @@ class _ArticleScreenState extends State<ArticleScreen> {
     }
 
     final language = state.language;
-    final internationalRss = article.id.startsWith('rss-') &&
-        article.sources.length == 1 &&
-        const {
-          'TechCrunch',
-          'Ars Technica',
-          'WIRED',
-          'The Verge',
-          'MIT Technology Review',
-          'BBC News',
-          'The Guardian',
-          'The New York Times',
-          'dbt Labs',
-          'Microsoft Power BI'
-        }.contains(article.sources.single.name);
     final shouldTranslate =
-        language != AppLanguage.portuguese || internationalRss;
+        language != AppLanguage.portuguese || article.isInternationalRss;
     if (shouldTranslate && _translationLanguage != language) {
       _translationLanguage = language;
       _translation = state.repo.translateArticle(article.id, language.code);
@@ -195,6 +184,7 @@ class _ArticleScreenState extends State<ArticleScreen> {
           result.data,
           result.connectionState == ConnectionState.waiting,
           result.hasError,
+          shouldTranslate ? language.code : null,
           top,
           bottom),
     );
@@ -207,6 +197,7 @@ class _ArticleScreenState extends State<ArticleScreen> {
       ArticleTranslation? translation,
       bool translating,
       bool translationFailed,
+      String? targetLanguage,
       double top,
       double bottom) {
     final saved = state.isSaved(article.id);
@@ -215,6 +206,14 @@ class _ArticleScreenState extends State<ArticleScreen> {
         .map((paragraph) => paragraph.trim())
         .where((paragraph) => paragraph.isNotEmpty)
         .toList();
+    final webpage = article.sources
+        .map((source) => Uri.tryParse(source.url))
+        .whereType<Uri>()
+        .where((url) =>
+            url.scheme == 'https' &&
+            url.host.isNotEmpty &&
+            url.userInfo.isEmpty)
+        .firstOrNull;
     final synopsis = _synopsis(
         translation == null ? article.summary : [translation.synopsis],
         paragraphs);
@@ -277,8 +276,8 @@ class _ArticleScreenState extends State<ArticleScreen> {
                         color: RColors.bgElevated,
                         borderRadius: BorderRadius.circular(RRadius.pill),
                       ),
-                      child:
-                          Text(article.kickerLabel, style: RText.caption1Emph),
+                      child: Text(context.tr(article.kickerLabel),
+                          style: RText.caption1Emph),
                     ),
                     if (article.firstInBrazil) const FirstBadge(),
                   ],
@@ -293,29 +292,34 @@ class _ArticleScreenState extends State<ArticleScreen> {
                   _MetaLine(
                     icon: Icons.article_outlined,
                     color: RColors.radar,
-                    text: 'Publicado por ${publisher.name}',
+                    text: context
+                        .tr('Publicado por {name}', {'name': publisher.name}),
                   )
                 else if (article.confirmed)
                   _MetaLine(
                     icon: Icons.check_circle,
                     color: RColors.radar,
-                    text:
-                        'Confirmado por ${article.sourceCount} fontes · detectado às ${hhmm(article.detectedAt)}',
+                    text: context.tr(
+                        'Confirmado por {n} fontes · detectado às {time}', {
+                      'n': article.sourceCount,
+                      'time': hhmm(article.detectedAt)
+                    }),
                   )
                 else
                   _MetaLine(
                     icon: Icons.warning_amber_rounded,
                     color: RColors.orange,
-                    text:
-                        'Rumor não confirmado · só ${plural(article.sourceCount, 'fonte', 'fontes')} até agora',
+                    text: context.tr(
+                        'Rumor não confirmado · {n} fonte(s) até agora',
+                        {'n': article.sourceCount}),
                   ),
                 if (article.firstInBrazil && article.leadMinutes != null) ...[
                   const SizedBox(height: 6),
                   _MetaLine(
                     icon: Icons.bolt,
                     color: RColors.radar,
-                    text:
-                        'Você soube ${article.leadMinutes} min antes da imprensa BR',
+                    text: context.tr('Você soube {n} min antes da imprensa BR',
+                        {'n': article.leadMinutes}),
                     emphasize: true,
                   ),
                 ],
@@ -364,7 +368,29 @@ class _ArticleScreenState extends State<ArticleScreen> {
                           style: RText.body.withColor(RColors.textSecondary)),
                     ),
                 ],
-                if (paragraphs.isEmpty) ...[
+                if (paragraphs.isEmpty && webpage != null) ...[
+                  const SizedBox(height: 16),
+                  RButton(
+                    'Ler matéria completa',
+                    icon: Icons.article_outlined,
+                    onPressed: () {
+                      final embedded = !kIsWeb &&
+                          (defaultTargetPlatform == TargetPlatform.iOS ||
+                              defaultTargetPlatform == TargetPlatform.android);
+                      if (!embedded) {
+                        _openReadingLink(webpage);
+                        return;
+                      }
+                      Navigator.of(context).push(MaterialPageRoute<void>(
+                        builder: (_) => PublisherReaderScreen(
+                          article: article,
+                          sourceUrl: webpage,
+                          targetLanguage: targetLanguage,
+                        ),
+                      ));
+                    },
+                  ),
+                ] else if (paragraphs.isEmpty) ...[
                   const SizedBox(height: 12),
                   Text(context.tr('A fonte disponibilizou apenas um trecho.'),
                       style: RText.footnote.withColor(RColors.textSecondary)),

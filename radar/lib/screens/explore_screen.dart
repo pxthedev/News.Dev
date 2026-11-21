@@ -158,7 +158,7 @@ class _SearchFieldButton extends StatelessWidget {
             children: [
               const Icon(Icons.search, color: RColors.textSecondary, size: 20),
               const SizedBox(width: 8),
-              Text('Empresas, pessoas e tópicos', style: RText.body.withColor(RColors.textSecondary)),
+              Text(context.tr('Empresas, pessoas e tópicos'), style: RText.body.withColor(RColors.textSecondary)),
             ],
           ),
         ),
@@ -193,7 +193,7 @@ class _TopicCard extends StatelessWidget {
               const SizedBox(height: 22),
               Text(c.label, style: RText.headline),
               const SizedBox(height: 2),
-              Text('${stat.today} hoje', style: RText.footnote.withColor(RColors.textSecondary)),
+              Text(context.tr('{n} hoje', {'n': stat.today}), style: RText.footnote.withColor(RColors.textSecondary)),
             ],
           ),
         ),

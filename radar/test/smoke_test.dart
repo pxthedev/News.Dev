@@ -93,6 +93,11 @@ void main() {
     await tester.pump();
     expect(find.text('Nvidia', skipOffstage: false), findsWidgets);
 
+    unawaited(Routes.openArticle('rss-preview'));
+    await tester.pumpAndSettle();
+    expect(find.text('Ler matéria completa'), findsOneWidget);
+    expect(find.text('Fontes'), findsOneWidget);
+
     // Desmonta pra cancelar timers (polling de notícias novas, toasts).
     await tester.pumpWidget(const SizedBox());
     await tester.pump(const Duration(seconds: 10));
@@ -111,6 +116,13 @@ class _AuthenticatedState extends AppState {
 
 class _TranslationRepository extends MockRepository {
   _TranslationRepository() : super(latency: false);
+  @override
+  Future<Article?> article(String id) async {
+    if (id != 'rss-preview') return super.article(id);
+    final sample = await super.article('nvidia-fabrica');
+    return Article.fromJson({...sample!.toJson(), 'id': id, 'body': ''});
+  }
+
   @override
   Future<ArticleTranslation> translateArticle(
           String id, String language) async =>

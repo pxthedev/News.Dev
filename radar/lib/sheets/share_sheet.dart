@@ -1,3 +1,5 @@
+import '../l10n/app_copy.dart';
+
 import 'dart:ui' as ui;
 
 import 'package:material_ui/material_ui.dart';
@@ -58,7 +60,7 @@ class _ShareSheetState extends State<ShareSheet> {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text('Compartilhar furo', style: RText.headline),
+        Text(context.tr('Compartilhar furo'), style: RText.headline),
         const SizedBox(height: 16),
         RepaintBoundary(key: _cardKey, child: ShareCard(article: widget.article)),
         const SizedBox(height: 18),

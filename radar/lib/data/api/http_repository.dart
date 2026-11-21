@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import '../json.dart';
 import '../local_store.dart';
 import '../models.dart';
@@ -13,6 +15,55 @@ class HttpRepository extends RadarRepository {
 
   final ApiClient api;
   final LocalStore store;
+
+  final _headlineCache = <(String, String, String), Future<String?>>{};
+  final _headlineQueue = <String, Map<String, Completer<String?>>>{};
+  Timer? _headlineTimer;
+
+  Future<String?> translatedHeadline(Article article, String language) {
+    final key = (language, article.id, article.title);
+    if (_headlineCache.length >= 400) {
+      _headlineCache.remove(_headlineCache.keys.first);
+    }
+    return _headlineCache.putIfAbsent(key, () {
+      final pending = _headlineQueue.putIfAbsent(language, () => {});
+      final result = pending.putIfAbsent(article.id, Completer<String?>.new);
+      _headlineTimer ??=
+          Timer(const Duration(milliseconds: 35), _flushHeadlines);
+      return result.future.then((translation) {
+        if (translation == null) _headlineCache.remove(key);
+        return translation;
+      });
+    });
+  }
+
+  Future<void> _flushHeadlines() async {
+    _headlineTimer = null;
+    final batches = Map.of(_headlineQueue);
+    _headlineQueue.clear();
+    for (final group in batches.entries) {
+      final entries = group.value.entries.toList();
+      for (var offset = 0; offset < entries.length; offset += 15) {
+        final batch = entries.skip(offset).take(15).toList();
+        Json? response;
+        try {
+          response = await _get('/v1/articles/headline-translations', {
+            'ids': batch.map((entry) => entry.key).join(','),
+            'language': group.key,
+          });
+        } on RepoException {
+          // A notícia permanece legível no idioma original.
+        } on TypeError {
+          // Respostas inesperadas também preservam o título original.
+        }
+        for (final entry in batch) {
+          final title = response?[entry.key];
+          entry.value
+              .complete(title is String && title.isNotEmpty ? title : null);
+        }
+      }
+    }
+  }
 
   void _checkOnline() {
     if (simulateOffline) {

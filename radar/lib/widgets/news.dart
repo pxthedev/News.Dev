@@ -1,10 +1,43 @@
+import '../l10n/app_copy.dart';
+
 import 'package:material_ui/material_ui.dart';
 
 import '../data/models.dart';
+import '../data/api/http_repository.dart';
+import '../state/app_state.dart';
 import '../routes.dart';
 import '../theme/tokens.dart';
-import '../utils/format.dart';
 import 'primitives.dart';
+
+class NewsHeadline extends StatelessWidget {
+  const NewsHeadline(this.article,
+      {super.key, required this.style, this.maxLines, this.overflow});
+
+  final Article article;
+  final TextStyle style;
+  final int? maxLines;
+  final TextOverflow? overflow;
+
+  @override
+  Widget build(BuildContext context) {
+    final state =
+        context.dependOnInheritedWidgetOfExactType<AppScope>()?.notifier;
+    final repository = state?.repo;
+    final language = state?.language;
+    Widget label(String title) =>
+        Text(title, style: style, maxLines: maxLines, overflow: overflow);
+    if (repository is! HttpRepository ||
+        language == null ||
+        (language == AppLanguage.portuguese && !article.isInternationalRss)) {
+      return label(article.title);
+    }
+    return FutureBuilder<String?>(
+      key: ValueKey((article.id, language)),
+      future: repository.translatedHeadline(article, language.code),
+      builder: (context, snapshot) => label(snapshot.data ?? article.title),
+    );
+  }
+}
 
 /// "SEGURANÇA · há 12 min" na cor da categoria.
 class CategoryMeta extends StatelessWidget {
@@ -14,9 +47,12 @@ class CategoryMeta extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final label = article.kickerLabel.toUpperCase();
-    final text = showTime ? '$label · ${relativeTime(article.publishedAt)}' : label;
-    return Text(text, style: RText.caption1Emph.withColor(article.category.color), maxLines: 1);
+    final label = context.tr(article.kickerLabel).toUpperCase();
+    final text =
+        showTime ? '$label · ${context.newsTime(article.publishedAt)}' : label;
+    return Text(text,
+        style: RText.caption1Emph.withColor(article.category.color),
+        maxLines: 1);
   }
 }
 
@@ -58,7 +94,9 @@ class Thumbnail extends StatelessWidget {
           height: height,
           child: imageUrl == null
               ? gradient
-              : Image.network(imageUrl!, fit: BoxFit.cover, errorBuilder: (context, error, stack) => gradient),
+              : Image.network(imageUrl!,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stack) => gradient),
         ),
       ),
     );
@@ -67,7 +105,11 @@ class Thumbnail extends StatelessWidget {
 
 /// Linha de notícia: categoria + tempo, título, fontes e miniatura 72×72.
 class NewsRow extends StatelessWidget {
-  const NewsRow({super.key, required this.article, this.showDivider = true, this.source = 'feed'});
+  const NewsRow(
+      {super.key,
+      required this.article,
+      this.showDivider = true,
+      this.source = 'feed'});
   final Article article;
   final bool showDivider;
   final String source;
@@ -81,7 +123,10 @@ class NewsRow extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 14),
           decoration: BoxDecoration(
-            border: showDivider ? const Border(bottom: BorderSide(color: RColors.separator, width: 0.5)) : null,
+            border: showDivider
+                ? const Border(
+                    bottom: BorderSide(color: RColors.separator, width: 0.5))
+                : null,
           ),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -98,9 +143,14 @@ class NewsRow extends StatelessWidget {
                       ],
                     ]),
                     const SizedBox(height: 4),
-                    Text(article.title, style: RText.headline, maxLines: 3, overflow: TextOverflow.ellipsis),
+                    NewsHeadline(article,
+                        style: RText.headline,
+                        maxLines: 3,
+                        overflow: TextOverflow.ellipsis),
                     const SizedBox(height: 4),
-                    Text(article.sourcesLabel, style: RText.footnote.withColor(RColors.textSecondary), maxLines: 1),
+                    Text(article.sourcesLabel,
+                        style: RText.footnote.withColor(RColors.textSecondary),
+                        maxLines: 1),
                   ],
                 ),
               ),
@@ -123,9 +173,11 @@ class FeedSkeleton extends StatefulWidget {
   State<FeedSkeleton> createState() => _FeedSkeletonState();
 }
 
-class _FeedSkeletonState extends State<FeedSkeleton> with SingleTickerProviderStateMixin {
-  late final AnimationController _c =
-      AnimationController(vsync: this, duration: const Duration(milliseconds: 900))..repeat(reverse: true);
+class _FeedSkeletonState extends State<FeedSkeleton>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _c = AnimationController(
+      vsync: this, duration: const Duration(milliseconds: 900))
+    ..repeat(reverse: true);
 
   @override
   void dispose() {
@@ -140,11 +192,13 @@ class _FeedSkeletonState extends State<FeedSkeleton> with SingleTickerProviderSt
       child: AnimatedBuilder(
         animation: _c,
         builder: (context, _) {
-          final color = Color.lerp(RColors.bgCard, RColors.bgElevated, _c.value)!;
+          final color =
+              Color.lerp(RColors.bgCard, RColors.bgElevated, _c.value)!;
           Widget box(double w, double h) => Container(
                 width: w,
                 height: h,
-                decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(6)),
+                decoration: BoxDecoration(
+                    color: color, borderRadius: BorderRadius.circular(6)),
               );
           return Column(
             children: [
@@ -171,7 +225,9 @@ class _FeedSkeletonState extends State<FeedSkeleton> with SingleTickerProviderSt
                       Container(
                         width: RSize.thumb,
                         height: RSize.thumb,
-                        decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(RRadius.thumb)),
+                        decoration: BoxDecoration(
+                            color: color,
+                            borderRadius: BorderRadius.circular(RRadius.thumb)),
                       ),
                     ],
                   ),

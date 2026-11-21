@@ -37,7 +37,7 @@ class AlertsScreen extends StatelessWidget {
                     onTap: state.markAllAlertsRead,
                     child: Padding(
                       padding: const EdgeInsets.symmetric(vertical: 12),
-                      child: Text('Marcar como lidos', style: RText.subheadline.withColor(RColors.radar)),
+                      child: Text(context.tr('Marcar como lidos'), style: RText.subheadline.withColor(RColors.radar)),
                     ),
                   ),
               ],

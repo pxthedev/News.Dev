@@ -10,7 +10,6 @@ import '../data/repository.dart';
 import '../routes.dart';
 import '../state/app_state.dart';
 import '../theme/tokens.dart';
-import '../utils/format.dart';
 import '../widgets/charts.dart';
 import '../widgets/news.dart';
 import '../widgets/primitives.dart';
@@ -228,7 +227,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   children: [
                     Semantics(
                         header: true,
-                        child: Text(greeting(state.firstName),
+                        child: Text(context.newsGreeting(state.firstName),
                             style: wide
                                 ? RText.title1.copyWith(fontSize: 44)
                                 : RText.title1)),
@@ -240,8 +239,12 @@ class _HomeScreenState extends State<HomeScreen> {
                         Expanded(
                           child: Text(
                             _home == null
-                                ? 'Atualizando…'
-                                : '${plural(_home!.scoopsSinceLastNight, 'furo', 'furos')} desde ontem à noite',
+                                ? context.tr('Atualizando…')
+                                : context.tr(
+                                    _home!.scoopsSinceLastNight == 1
+                                        ? '{n} furo desde ontem à noite'
+                                        : '{n} furos desde ontem à noite',
+                                    {'n': _home!.scoopsSinceLastNight}),
                             style: RText.subheadline
                                 .withColor(RColors.textSecondary),
                           ),
@@ -452,7 +455,7 @@ class HeroCard extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 8),
-                Text(relativeTime(article.publishedAt),
+                Text(context.newsTime(article.publishedAt),
                     style: RText.footnoteEmph.withColor(dark)),
               ],
             ),
@@ -461,7 +464,7 @@ class HeroCard extends StatelessWidget {
               const FirstBadge(),
               const SizedBox(height: 8),
             ],
-            Text(article.title, style: RText.title2.withColor(dark)),
+            NewsHeadline(article, style: RText.title2.withColor(dark)),
             const SizedBox(height: 18),
             Row(
               children: [
@@ -477,7 +480,10 @@ class HeroCard extends StatelessWidget {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    '${article.sourceCount} fontes · ${article.readingMinutes} min',
+                    context.tr('{n} fontes · {min} min', {
+                      'n': article.sourceCount,
+                      'min': article.readingMinutes
+                    }),
                     style: RText.footnoteEmph.withColor(dark),
                   ),
                 ),
@@ -531,7 +537,7 @@ class _AdvantageCard extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 4),
-              Text('à frente da imprensa BR, em média',
+              Text(context.tr('à frente da imprensa BR, em média'),
                   style: RText.caption1.withColor(RColors.textSecondary)),
             ],
           ),
@@ -615,7 +621,7 @@ class _NewItemsPill extends StatelessWidget {
           children: [
             const Icon(Icons.arrow_upward, size: 16, color: RColors.onRadar),
             const SizedBox(width: 4),
-            Text('$count novas',
+            Text(context.tr('{n} novas', {'n': count}),
                 style: RText.footnoteEmph.withColor(RColors.onRadar)),
           ],
         ),
@@ -638,7 +644,9 @@ class _OfflineNotice extends StatelessWidget {
           const Icon(Icons.wifi_off, color: RColors.textSecondary, size: 20),
           const SizedBox(width: 10),
           Expanded(
-            child: Text('Sem conexão. Mostrando as últimas notícias salvas.',
+            child: Text(
+                context
+                    .tr('Sem conexão. Mostrando as últimas notícias salvas.'),
                 style: RText.footnote),
           ),
         ],

@@ -1,3 +1,5 @@
+import '../../l10n/app_copy.dart';
+
 import 'package:material_ui/material_ui.dart';
 
 import '../../services/analytics.dart';
@@ -71,7 +73,7 @@ class PushPermissionScreen extends StatelessWidget {
                   const SizedBox(height: 32),
                   const TintPill('Último passo', icon: Icons.bolt),
                   const SizedBox(height: 12),
-                  Semantics(header: true, child: Text('Seja o primeiro a saber', style: RText.title1)),
+                  Semantics(header: true, child: Text(context.tr('Seja o primeiro a saber'), style: RText.title1)),
                   const SizedBox(height: 8),
                   Text(
                     'Ative as notificações pra receber os furos assim que nossa IA confirmar a notícia em mais de uma fonte.',

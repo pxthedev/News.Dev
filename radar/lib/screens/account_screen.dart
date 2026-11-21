@@ -210,9 +210,9 @@ class _AccountScreenState extends State<AccountScreen> {
                         const Center(child: BrandLockup(size: 56)),
                         const SizedBox(height: 24),
                         Text(
-                            _mode == _Mode.register
+                            context.tr(_mode == _Mode.register
                                 ? 'Crie sua conta para escolher seus interesses e montar seu feed.'
-                                : 'Entre para continuar e personalizar suas notícias.',
+                                : 'Entre para continuar e personalizar suas notícias.'),
                             style: RText.body.withColor(RColors.textSecondary)),
                         const SizedBox(height: 24),
                         Form(
@@ -327,12 +327,13 @@ class _AccountScreenState extends State<AccountScreen> {
                         if (_mode == _Mode.login ||
                             _mode == _Mode.register) ...[
                           const SizedBox(height: 20),
-                          const Row(children: [
-                            Expanded(child: Divider()),
+                          Row(children: [
+                            const Expanded(child: Divider()),
                             Padding(
-                                padding: EdgeInsets.symmetric(horizontal: 16),
-                                child: Text('ou')),
-                            Expanded(child: Divider())
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 16),
+                                child: Text(context.tr('ou'))),
+                            const Expanded(child: Divider())
                           ]),
                           const SizedBox(height: 20),
                           RButton('Continuar com Google',
@@ -344,14 +345,15 @@ class _AccountScreenState extends State<AccountScreen> {
                         const SizedBox(height: 16),
                         Semantics(
                             liveRegion: true,
-                            child: Text(_error!,
+                            child: Text(context.tr(_error!),
                                 style: RText.body.withColor(RColors.urgent)))
                       ],
                       if (_message != null) ...[
                         const SizedBox(height: 16),
                         Semantics(
                             liveRegion: true,
-                            child: Text(_message!, style: RText.body))
+                            child:
+                                Text(context.tr(_message!), style: RText.body))
                       ],
                     ],
                   )))),

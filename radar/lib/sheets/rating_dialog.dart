@@ -1,3 +1,5 @@
+import '../l10n/app_copy.dart';
+
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 
@@ -57,7 +59,7 @@ class _RatingDialogState extends State<RatingDialog> {
                   children: [
                     const AppIcon(size: 64),
                     const SizedBox(height: 14),
-                    Semantics(header: true, child: Text('Curtindo o news.dev?', style: RText.headline)),
+                    Semantics(header: true, child: Text(context.tr('Curtindo o news.dev?'), style: RText.headline)),
                     const SizedBox(height: 6),
                     Text(
                       'Você soube de ${widget.scoops} furos antes de todo mundo esta semana. Conta pra gente na App Store?',

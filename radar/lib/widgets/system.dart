@@ -270,7 +270,7 @@ class UrgentBanner extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('URGENTE · AGORA', style: RText.caption2.withColor(RColors.urgent)),
+                      Text(context.tr('URGENTE · AGORA'), style: RText.caption2.withColor(RColors.urgent)),
                       const SizedBox(height: 2),
                       Text(article.title, style: RText.subheadlineEmph, maxLines: 2, overflow: TextOverflow.ellipsis),
                     ],

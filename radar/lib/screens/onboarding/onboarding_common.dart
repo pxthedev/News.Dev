@@ -1,3 +1,5 @@
+import '../../l10n/app_copy.dart';
+
 import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
@@ -114,10 +116,10 @@ class OnboardingScaffold extends StatelessWidget {
                 padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
                 children: [
                   Semantics(
-                      header: true, child: Text(title, style: RText.title1)),
+                      header: true, child: Text(context.tr(title), style: RText.title1)),
                   if (subtitle != null) ...[
                     const SizedBox(height: 8),
-                    Text(subtitle!,
+                    Text(context.tr(subtitle!),
                         style: RText.callout.withColor(RColors.textSecondary)),
                   ],
                   const SizedBox(height: 22),

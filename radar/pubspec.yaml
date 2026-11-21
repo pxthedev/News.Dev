@@ -1,7 +1,7 @@
 name: radar
 description: news.dev — notícias de tecnologia.
 publish_to: "none"
-version: 0.7.0+13
+version: 0.7.1+14
 
 environment:
   sdk: ">=3.5.0 <4.0.0"
@@ -25,6 +25,7 @@ dependencies:
   flutter_secure_storage: ^11.2.0
   google_sign_in: ^7.2.0
   supabase_flutter: ^2.18.3
+  webview_flutter: 4.14.1
 dev_dependencies:
   flutter_test:
     sdk: flutter

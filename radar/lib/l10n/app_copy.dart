@@ -1,5 +1,7 @@
 import 'package:material_ui/material_ui.dart';
 
+import '../utils/format.dart' as format;
+
 enum AppLanguage {
   portuguese('pt', 'Português', Locale('pt', 'BR')),
   english('en', 'English', Locale('en')),
@@ -16,14 +18,46 @@ enum AppLanguage {
 }
 
 extension AppCopy on BuildContext {
-  String tr(String text) {
+  String tr(String text, [Map<String, Object?> values = const {}]) {
     final match = _translations[text];
-    if (match == null) return text;
-    return switch (Localizations.maybeLocaleOf(this)?.languageCode) {
-      'en' => match.$1,
-      'es' => match.$2,
-      _ => text,
-    };
+    final localized = match == null
+        ? text
+        : switch (Localizations.maybeLocaleOf(this)?.languageCode) {
+            'en' => match.$1,
+            'es' => match.$2,
+            _ => text,
+          };
+    if (values.isEmpty) return localized;
+    return localized.replaceAllMapped(RegExp(r'\{(\w+)\}'),
+        (slot) => values[slot[1]]?.toString() ?? slot[0]!);
+  }
+
+  String newsGreeting(String name, {DateTime? now}) {
+    final hour = (now ?? DateTime.now()).hour;
+    final greeting = tr(hour < 12
+        ? 'Bom dia'
+        : hour < 18
+            ? 'Boa tarde'
+            : 'Boa noite');
+    return '$greeting, $name';
+  }
+
+  String newsTime(DateTime time, {DateTime? now}) {
+    final today = now ?? DateTime.now();
+    final age = today.difference(time);
+    if (age.inMinutes < 1) return tr('agora');
+    if (age.inMinutes < 60) return tr('há {n} min', {'n': age.inMinutes});
+    if (format.isSameDay(time, today)) {
+      return tr('há {n} h', {'n': age.inHours});
+    }
+    if (format.isSameDay(
+        time, DateTime(today.year, today.month, today.day - 1))) {
+      return tr('ontem às {time}', {
+        'time': MaterialLocalizations.of(this)
+            .formatTimeOfDay(TimeOfDay.fromDateTime(time))
+      });
+    }
+    return MaterialLocalizations.of(this).formatShortDate(time);
   }
 }
 
@@ -159,5 +193,252 @@ const _translations = <String, (String, String)>{
   'Análise de dados, SQL, BI, engenharia de dados e carreira.': (
     'Data analysis, SQL, BI, data engineering, and careers.',
     'Análisis de datos, SQL, BI, ingeniería de datos y carreras.',
+  ),
+  'Não foi possível carregar a publicação.': (
+    'Could not load the publisher’s article.',
+    'No se pudo cargar la publicación.'
+  ),
+  'Você pode tentar abrir o texto original.': (
+    'You can try reading the original.',
+    'Puedes intentar leer el original.'
+  ),
+  'Ver original': ('View original', 'Ver original'),
+  'Traduzir página': ('Translate page', 'Traducir página'),
+  'Publicado por {name}': ('Published by {name}', 'Publicado por {name}'),
+  'Confirmado por {n} fontes · detectado às {time}': (
+    'Confirmed by {n} sources · detected at {time}',
+    'Confirmado por {n} fuentes · detectado a las {time}'
+  ),
+  'Rumor não confirmado · {n} fonte(s) até agora': (
+    'Unconfirmed rumor · {n} source(s) so far',
+    'Rumor sin confirmar · {n} fuente(s) hasta ahora'
+  ),
+  'Você soube {n} min antes da imprensa BR': (
+    'You heard {n} min before the Brazilian press',
+    'Te enteraste {n} min antes que la prensa brasileña'
+  ),
+  'Bom dia': ('Good morning', 'Buenos días'),
+  'Boa tarde': ('Good afternoon', 'Buenas tardes'),
+  'Boa noite': ('Good evening', 'Buenas noches'),
+  'agora': ('now', 'ahora'),
+  'há {n} min': ('{n} min ago', 'hace {n} min'),
+  'há {n} h': ('{n} h ago', 'hace {n} h'),
+  'ontem às {time}': ('yesterday at {time}', 'ayer a las {time}'),
+  '{n} furo desde ontem à noite': (
+    '{n} scoop since last night',
+    '{n} primicia desde anoche'
+  ),
+  '{n} furos desde ontem à noite': (
+    '{n} scoops since last night',
+    '{n} primicias desde anoche'
+  ),
+  '{n} novas': ('{n} new', '{n} nuevas'),
+  '{n} fontes · {min} min': (
+    '{n} sources · {min} min',
+    '{n} fuentes · {min} min'
+  ),
+  '{n} matérias': ('{n} articles', '{n} artículos'),
+  '{n} matéria': ('{n} article', '{n} artículo'),
+  '{n} hoje': ('{n} today', '{n} hoy'),
+  '{n} min de leitura': ('{n} min read', '{n} min de lectura'),
+  '{n} min restantes': ('{n} min left', '{n} min restantes'),
+  '{n} dias': ('{n} days', '{n} días'),
+  'Leitor desde {date}': ('Reader since {date}', 'Lector desde {date}'),
+  'Nada encontrado pra “{query}”': (
+    'Nothing found for “{query}”',
+    'No se encontraron resultados para «{query}»'
+  ),
+  'Confira a conexão e tente de novo.': (
+    'Check your connection and try again.',
+    'Comprueba la conexión e inténtalo de nuevo.'
+  ),
+  'Puxe pra tentar de novo.': (
+    'Pull to try again.',
+    'Desliza hacia abajo para reintentar.'
+  ),
+  'Sem conexão. Mostrando as últimas notícias salvas.': (
+    'Offline. Showing the latest saved news.',
+    'Sin conexión. Mostrando las últimas noticias guardadas.'
+  ),
+  'Essa matéria saiu do ar': (
+    'This article is unavailable',
+    'Este artículo no está disponible'
+  ),
+  'Volte pro feed pra ver as últimas notícias.': (
+    'Return to the feed for the latest news.',
+    'Vuelve al feed para ver las últimas noticias.'
+  ),
+  'Nada por aqui ainda': ('Nothing here yet', 'Aún no hay nada aquí'),
+  'Nada novo por aqui': ('Nothing new here', 'No hay novedades'),
+  'Puxe o feed pra atualizar.': (
+    'Pull to refresh the feed.',
+    'Desliza para actualizar el feed.'
+  ),
+  'A IA avisa assim que surgir algo confirmado.': (
+    'We’ll alert you when there’s a confirmed story.',
+    'Te avisaremos cuando haya una noticia confirmada.'
+  ),
+  'Pessoas em destaque': ('People in the news', 'Personas destacadas'),
+  'Empresas, pessoas e tópicos': (
+    'Companies, people, and topics',
+    'Empresas, personas y temas'
+  ),
+  'Matérias': ('Articles', 'Artículos'),
+  'Tópicos': ('Topics', 'Temas'),
+  'Pessoas': ('People', 'Personas'),
+  'Buscas recentes': ('Recent searches', 'Búsquedas recientes'),
+  'Limpar': ('Clear', 'Borrar'),
+  'Tente o nome de uma empresa, pessoa ou tópico.': (
+    'Try a company, person, or topic.',
+    'Prueba con una empresa, persona o tema.'
+  ),
+  'Tudo em dia': ('All caught up', 'Todo al día'),
+  'Marcar como lidos': ('Mark as read', 'Marcar como leídos'),
+  'Quando nossa IA confirmar um furo dos seus tópicos, ele aparece aqui.': (
+    'Confirmed scoops on your topics will appear here.',
+    'Las primicias confirmadas de tus temas aparecerán aquí.'
+  ),
+  'Compartilhar furo': ('Share article', 'Compartir artículo'),
+  'Link copiado': ('Link copied', 'Enlace copiado'),
+  'Agora não': ('Not now', 'Ahora no'),
+  'Curtindo o news.dev?': ('Enjoying news.dev?', '¿Te gusta news.dev?'),
+  'Comunidade news.dev': ('news.dev community', 'Comunidad news.dev'),
+  'URGENTE · AGORA': ('BREAKING · NOW', 'URGENTE · AHORA'),
+  'Voltar para entrar': ('Back to sign in', 'Volver a iniciar sesión'),
+  'ou': ('or', 'o'),
+  'Já tenho conta': ('I already have an account', 'Ya tengo una cuenta'),
+  'Tecnologia, antes de todo mundo.': (
+    'Technology news before everyone else.',
+    'Tecnología antes que nadie.'
+  ),
+  'O que te interessa?': ('What are you interested in?', '¿Qué te interesa?'),
+  'Escolha 3 ou mais. Seu feed se ajusta ao que você lê.': (
+    'Pick 3 or more. Your feed adapts to what you read.',
+    'Elige 3 o más. Tu feed se adapta a lo que lees.'
+  ),
+  'Quantos alertas você quer?': (
+    'How many alerts do you want?',
+    '¿Cuántas alertas quieres?'
+  ),
+  'Você controla o barulho. Dá pra mudar a qualquer momento.': (
+    'You control your notifications and can change them any time.',
+    'Tú controlas las alertas y puedes cambiarlas cuando quieras.'
+  ),
+  'Silêncio das 23h às 7h': (
+    'Quiet hours: 11 pm to 7 am',
+    'Silencio de 23 h a 7 h'
+  ),
+  'Seja o primeiro a saber': (
+    'Be the first to know',
+    'Sé el primero en enterarte'
+  ),
+  'Ativar notificações': ('Enable notifications', 'Activar notificaciones'),
+  'Resumo da manhã': ('Morning digest', 'Resumen de la mañana'),
+  'À frente da imprensa BR, em média': (
+    'Ahead of the Brazilian press, on average',
+    'Por delante de la prensa brasileña, en promedio'
+  ),
+  'à frente da imprensa BR, em média': (
+    'ahead of the Brazilian press, on average',
+    'por delante de la prensa brasileña, en promedio'
+  ),
+  'furos antes de todo mundo': (
+    'scoops before everyone else',
+    'primicias antes que nadie'
+  ),
+  'Salvo pra ler depois': ('Saved for later', 'Guardado para más tarde'),
+  'Removido dos salvos': (
+    'Removed from saved articles',
+    'Quitado de guardados'
+  ),
+  'Não foi possível abrir a página.': (
+    'Could not open the page.',
+    'No se pudo abrir la página.'
+  ),
+  'Saindo…': ('Signing out…', 'Cerrando sesión…'),
+  'Lida': ('Read', 'Leído'),
+  'Salve matérias pra ler depois': (
+    'Save articles to read later',
+    'Guarda artículos para leer después'
+  ),
+  'O que você terminar de ler fica aqui': (
+    'Finished articles appear here',
+    'Los artículos leídos aparecen aquí'
+  ),
+  'Tópicos atualizados': ('Topics updated', 'Temas actualizados'),
+  'Salvar tópicos': ('Save topics', 'Guardar temas'),
+  'Crie sua conta para escolher seus interesses e montar seu feed.': (
+    'Create an account to select your interests and build your feed.',
+    'Crea una cuenta para elegir tus intereses y crear tu feed.'
+  ),
+  'Entre para continuar e personalizar suas notícias.': (
+    'Sign in to continue and personalize your news.',
+    'Inicia sesión para continuar y personalizar tus noticias.'
+  ),
+  'Siga tópicos pra montar este feed': (
+    'Follow topics to build this feed',
+    'Sigue temas para crear este feed'
+  ),
+  'Escolha o que te interessa e a gente avisa primeiro.': (
+    'Choose what interests you and we’ll keep you updated.',
+    'Elige tus intereses y te mantendremos al tanto.'
+  ),
+  'Puxe pra atualizar. A IA segue vasculhando as fontes.': (
+    'Pull to refresh while we check the sources.',
+    'Desliza para actualizar mientras revisamos las fuentes.'
+  ),
+  'Rumores aparecem no feed com o aviso “não confirmado”.': (
+    'Rumors appear in the feed with an “unconfirmed” label.',
+    'Los rumores aparecen con la etiqueta «sin confirmar».'
+  ),
+  'A velocidade não pode custar credibilidade. Rumores ficam escondidos.': (
+    'Rumors are hidden from the feed.',
+    'Los rumores se ocultan del feed.'
+  ),
+  'Modelos, agentes, pesquisa e regulação.': (
+    'Models, agents, research, and regulation.',
+    'Modelos, agentes, investigación y regulación.'
+  ),
+  'Ataques, vazamentos, falhas e correções.': (
+    'Attacks, leaks, vulnerabilities, and fixes.',
+    'Ataques, filtraciones, fallos y correcciones.'
+  ),
+  'Linguagens, ferramentas e open source.': (
+    'Languages, tools, and open source.',
+    'Lenguajes, herramientas y código abierto.'
+  ),
+  'Chips e hardware': ('Chips and hardware', 'Chips y hardware'),
+  'GPUs, fábricas, semicondutores e data centers.': (
+    'GPUs, factories, semiconductors, and data centers.',
+    'GPU, fábricas, semiconductores y centros de datos.'
+  ),
+  'Tech no Brasil': ('Tech in Brazil', 'Tecnología en Brasil'),
+  'Foguetes, satélites e exploração espacial.': (
+    'Rockets, satellites, and space exploration.',
+    'Cohetes, satélites y exploración espacial.'
+  ),
+  'Rodadas, aquisições e quem está crescendo.': (
+    'Funding, acquisitions, and growing companies.',
+    'Financiación, adquisiciones y empresas en crecimiento.'
+  ),
+  'Celulares, wearables e lançamentos.': (
+    'Phones, wearables, and launches.',
+    'Móviles, wearables y lanzamientos.'
+  ),
+  'Consoles, estúdios e a indústria de jogos.': (
+    'Consoles, studios, and the gaming industry.',
+    'Consolas, estudios y la industria de videojuegos.'
+  ),
+  'Leis, governo e o que muda pra quem usa tecnologia.': (
+    'Laws, government, and changes that affect tech users.',
+    'Leyes, gobierno y cambios para quienes usan tecnología.'
+  ),
+  'Bitcoin, blockchain e ativos digitais.': (
+    'Bitcoin, blockchain, and digital assets.',
+    'Bitcoin, blockchain y activos digitales.'
+  ),
+  'Startups, governo e empresas brasileiras.': (
+    'Brazilian startups, government, and companies.',
+    'Startups, gobierno y empresas brasileñas.'
   ),
 };

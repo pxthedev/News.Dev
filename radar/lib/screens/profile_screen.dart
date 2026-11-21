@@ -65,7 +65,7 @@ class ProfileScreen extends StatelessWidget {
                       header: true,
                       child: Text(state.userName, style: RText.title3)),
                   const SizedBox(height: 2),
-                  Text('Leitor desde ${state.readerSince}',
+                  Text(context.tr('Leitor desde {date}', {'date': MaterialLocalizations.of(context).formatMonthYear(state.memberSince ?? DateTime.now())}),
                       style: RText.footnote.withColor(RColors.textSecondary)),
                 ],
               ),
@@ -118,9 +118,9 @@ class ProfileScreen extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.fromLTRB(4, 8, 4, 0),
           child: Text(
-            state.showRumors
+            context.tr(state.showRumors
                 ? 'Rumores aparecem no feed com o aviso “não confirmado”.'
-                : 'A velocidade não pode custar credibilidade. Rumores ficam escondidos.',
+                : 'A velocidade não pode custar credibilidade. Rumores ficam escondidos.'),
             style: RText.caption1.withColor(RColors.textTertiary),
           ),
         ),
@@ -255,7 +255,7 @@ class _WeekCard extends StatelessWidget {
                         const Icon(Icons.local_fire_department_outlined,
                             size: 14, color: RColors.radar),
                         const SizedBox(width: 4),
-                        Text('${w.streakDays} dias',
+                        Text(context.tr('{n} dias', {'n': w.streakDays}),
                             style: RText.caption1Emph.withColor(RColors.radar)),
                       ],
                     ),
@@ -267,7 +267,7 @@ class _WeekCard extends StatelessWidget {
                   Text('${w.scoops}', style: RText.display.withColor(dark)),
                   const SizedBox(width: 10),
                   Expanded(
-                      child: Text('furos antes de todo mundo',
+                      child: Text(context.tr('furos antes de todo mundo'),
                           style: RText.subheadline.withColor(dark))),
                 ],
               ),
