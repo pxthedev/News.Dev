@@ -22,21 +22,31 @@ public class SharedArticleController {
   private final ContentRepository articles;
   private final List<String> fingerprints;
 
-  public SharedArticleController(ContentRepository articles,
+  public SharedArticleController(
+      ContentRepository articles,
       @Value("${radar.share.android-fingerprints}") String fingerprints) {
     this.articles = articles;
-    this.fingerprints = Arrays.stream(fingerprints.split(","))
-        .map(String::trim).filter(value -> value.matches("(?i)(?:[0-9a-f]{2}:){31}[0-9a-f]{2}"))
-        .toList();
+    this.fingerprints =
+        Arrays.stream(fingerprints.split(","))
+            .map(String::trim)
+            .filter(value -> value.matches("(?i)(?:[0-9a-f]{2}:){31}[0-9a-f]{2}"))
+            .toList();
   }
 
   @GetMapping(value = "/.well-known/assetlinks.json", produces = MediaType.APPLICATION_JSON_VALUE)
   List<Map<String, Object>> androidLinks() {
     if (fingerprints.isEmpty()) return List.of();
-    return List.of(Map.of(
-        "relation", List.of("delegate_permission/common.handle_all_urls"),
-        "target", Map.of("namespace", "android_app", "package_name", "app.radar.radar",
-            "sha256_cert_fingerprints", fingerprints)));
+    return List.of(
+        Map.of(
+            "relation", List.of("delegate_permission/common.handle_all_urls"),
+            "target",
+                Map.of(
+                    "namespace",
+                    "android_app",
+                    "package_name",
+                    "app.radar.radar",
+                    "sha256_cert_fingerprints",
+                    fingerprints)));
   }
 
   @GetMapping(value = "/m/{id}", produces = "text/html;charset=UTF-8")
@@ -52,29 +62,44 @@ public class SharedArticleController {
     if (!article.confirmed() || article.publishedAt().isAfter(Instant.now())) return missing();
 
     String title = escape(article.title());
-    String synopsis = ArticleTranslation.shortSynopsis(article.summary().stream()
-        .filter(text -> !text.isBlank()).findFirst().orElse(""));
+    String synopsis =
+        ArticleTranslation.shortSynopsis(
+            article.summary().stream().filter(text -> !text.isBlank()).findFirst().orElse(""));
     String canonical = HOST + "/m/" + id;
-    String paragraphs = Arrays.stream(article.body().split("\\R\\s*\\R"))
-        .filter(text -> !text.isBlank()).map(text -> "<p>" + escape(text) + "</p>")
-        .collect(Collectors.joining());
+    String paragraphs =
+        Arrays.stream(article.body().split("\\R\\s*\\R"))
+            .filter(text -> !text.isBlank())
+            .map(text -> "<p>" + escape(text) + "</p>")
+            .collect(Collectors.joining());
     if (paragraphs.isEmpty()) paragraphs = "<p>A fonte disponibilizou apenas um trecho.</p>";
-    String sources = article.sources().stream().map(SharedArticleController::sourceLink)
-        .collect(Collectors.joining());
-    String meta = """
+    String sources =
+        article.sources().stream()
+            .map(SharedArticleController::sourceLink)
+            .collect(Collectors.joining());
+    String meta =
+        """
         <link rel="canonical" href="%1$s">
         <meta property="og:url" content="%1$s">
         <meta property="og:title" content="%2$s">
         <meta property="og:description" content="%3$s">
         <meta property="og:type" content="article">
         <meta property="og:site_name" content="news.dev">
-        """.formatted(canonical, title, escape(synopsis));
-    String content = "<h1>" + title + "</h1>"
-        + (synopsis.isEmpty() ? "" : "<section class=\"synopsis\"><h2>Sinopse</h2><p>"
-            + escape(synopsis) + "</p></section>")
-        + "<p><a class=\"open\" href=\"radar://materia/" + id
-        + "?source=share\">Abrir no app</a></p>" + paragraphs
-        + (sources.isEmpty() ? "" : "<h2>Fontes</h2><ul>" + sources + "</ul>");
+        """
+            .formatted(canonical, title, escape(synopsis));
+    String content =
+        "<h1>"
+            + title
+            + "</h1>"
+            + (synopsis.isEmpty()
+                ? ""
+                : "<section class=\"synopsis\"><h2>Sinopse</h2><p>"
+                    + escape(synopsis)
+                    + "</p></section>")
+            + "<p><a class=\"open\" href=\"radar://materia/"
+            + id
+            + "?source=share\">Abrir no app</a></p>"
+            + paragraphs
+            + (sources.isEmpty() ? "" : "<h2>Fontes</h2><ul>" + sources + "</ul>");
     return page(HttpStatus.OK, title, meta, content);
   }
 
@@ -83,9 +108,13 @@ public class SharedArticleController {
     try {
       URI url = URI.create(source.url());
       if (("https".equalsIgnoreCase(url.getScheme()) || "http".equalsIgnoreCase(url.getScheme()))
-          && url.getHost() != null && url.getUserInfo() == null) {
-        return "<li><a href=\"" + escape(url.toASCIIString()) + "\" rel=\"noopener noreferrer\">"
-            + name + "</a></li>";
+          && url.getHost() != null
+          && url.getUserInfo() == null) {
+        return "<li><a href=\""
+            + escape(url.toASCIIString())
+            + "\" rel=\"noopener noreferrer\">"
+            + name
+            + "</a></li>";
       }
     } catch (IllegalArgumentException ignored) {
       // O veículo ainda aparece como atribuição se não houver URL válida.
@@ -94,7 +123,10 @@ public class SharedArticleController {
   }
 
   private static ResponseEntity<String> missing() {
-    return page(HttpStatus.NOT_FOUND, "Matéria indisponível", "",
+    return page(
+        HttpStatus.NOT_FOUND,
+        "Matéria indisponível",
+        "",
         "<h1>Matéria indisponível</h1><p>Este link não leva a uma matéria publicada.</p>");
   }
 
@@ -102,12 +134,15 @@ public class SharedArticleController {
     return HtmlUtils.htmlEscape(text, "UTF-8");
   }
 
-  private static ResponseEntity<String> page(HttpStatus status, String title, String meta, String content) {
+  private static ResponseEntity<String> page(
+      HttpStatus status, String title, String meta, String content) {
     return ResponseEntity.status(status)
-        .header("Content-Security-Policy",
+        .header(
+            "Content-Security-Policy",
             "default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; frame-ancestors 'none'")
         .header("Referrer-Policy", "no-referrer")
-        .body("""
+        .body(
+            """
             <!doctype html>
             <html lang="pt-BR"><head><meta charset="utf-8">
             <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -121,6 +156,7 @@ public class SharedArticleController {
             .open{display:inline-block;border-radius:2rem;background:#d4ff3a;color:#0d1400;
             padding:.6rem 1.1rem;font-weight:700;text-decoration:none}li{margin:.35rem 0}
             </style></head><body><main><div class="brand">news.dev</div>%s</main></body></html>
-            """.formatted(title, meta, content));
+            """
+                .formatted(title, meta, content));
   }
 }

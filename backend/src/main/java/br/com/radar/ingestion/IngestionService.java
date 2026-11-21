@@ -24,7 +24,8 @@ public class IngestionService {
     this.articles = articles;
   }
 
-  public record SourceConfig(String id, String name, String url, String category, boolean allowFullText) {}
+  public record SourceConfig(
+      String id, String name, String url, String category, boolean allowFullText) {}
 
   public void save(SourceConfig source) {
     if (source.id() == null
@@ -59,13 +60,23 @@ public class IngestionService {
 
   Map<String, Integer> run(TechFeeds.Feed feed) {
     var ref = store.doc("sources", feed.id());
-    store.transaction(tx -> {
-      if (!await(tx.get(ref)).exists()) {
-        tx.set(ref, map("name", feed.name(), "url", feed.url(), "category",
-            Objects.requireNonNullElse(feed.fallback(), "bigtech"), "enabled", true));
-      }
-      return null;
-    });
+    store.transaction(
+        tx -> {
+          if (!await(tx.get(ref)).exists()) {
+            tx.set(
+                ref,
+                map(
+                    "name",
+                    feed.name(),
+                    "url",
+                    feed.url(),
+                    "category",
+                    Objects.requireNonNullElse(feed.fallback(), "bigtech"),
+                    "enabled",
+                    true));
+          }
+          return null;
+        });
     return run(feed.id(), feed);
   }
 
@@ -73,7 +84,8 @@ public class IngestionService {
     var ref = store.doc("sources", sourceId);
     var source = store.get(ref);
     require(source);
-    if (feed != null && !Boolean.TRUE.equals(source.getBoolean("enabled"))) return Map.of("imported", 0);
+    if (feed != null && !Boolean.TRUE.equals(source.getBoolean("enabled")))
+      return Map.of("imported", 0);
     int inserted = 0;
     // Lease evita duas instâncias coletarem a mesma fonte ao mesmo tempo.
     boolean claim =
@@ -88,9 +100,10 @@ public class IngestionService {
     if (!claim) return Map.of("imported", 0);
     try {
       String sourceUrl = source.getString("url");
-      var entries = feed != null && feed.url().equals(sourceUrl)
-          ? fetcher.fetch(sourceUrl, feed.host())
-          : fetcher.fetch(sourceUrl);
+      var entries =
+          feed != null && feed.url().equals(sourceUrl)
+              ? fetcher.fetch(sourceUrl, feed.host())
+              : fetcher.fetch(sourceUrl);
       Instant now = Instant.now();
       for (SyndEntry entry : entries.stream().limit(100).toList()) {
         if (feed != null && inserted >= 25) break;
@@ -116,8 +129,10 @@ public class IngestionService {
         Instant published = date == null ? now : date.toInstant();
         if (published.isAfter(now.plusSeconds(300))
             || (feed != null && published.isBefore(now.minus(Duration.ofDays(7))))) continue;
-        String category = feed == null ? source.getString("category")
-            : TechFeeds.category(title, excerpt, feed.fallback());
+        String category =
+            feed == null
+                ? source.getString("category")
+                : TechFeeds.category(title, excerpt, feed.fallback());
         if (category == null) continue;
         String canonical = canonical(link);
         String key = hash(canonical);
@@ -125,12 +140,14 @@ public class IngestionService {
         var imported = store.doc("imports", key);
         if (store.get(imported).exists()) continue;
         Instant detected = now;
-        String fullText = Boolean.TRUE.equals(source.getBoolean("allowFullText"))
-            ? entry.getContents().stream()
-                .map(content -> RssFetcher.articleText(content.getValue()))
-                .filter(value -> !value.isBlank())
-                .findFirst().orElse("")
-            : "";
+        String fullText =
+            Boolean.TRUE.equals(source.getBoolean("allowFullText"))
+                ? entry.getContents().stream()
+                    .map(content -> RssFetcher.articleText(content.getValue()))
+                    .filter(value -> !value.isBlank())
+                    .findFirst()
+                    .orElse("")
+                : "";
         if (fullText.length() > 100_000) fullText = "";
 
         String summary =
@@ -142,9 +159,13 @@ public class IngestionService {
                 id,
                 title,
                 feed == null
-                    ? List.of(summary, "Conteúdo importado por RSS, aguardando revisão editorial.",
+                    ? List.of(
+                        summary,
+                        "Conteúdo importado por RSS, aguardando revisão editorial.",
                         "Leia os detalhes e a atribuição na fonte original.")
-                    : (excerpt.isBlank() ? List.of() : List.of(br.com.radar.content.ArticleTranslation.shortSynopsis(excerpt))),
+                    : (excerpt.isBlank()
+                        ? List.of()
+                        : List.of(br.com.radar.content.ArticleTranslation.shortSynopsis(excerpt))),
                 fullText,
                 category,
                 feed == null ? "Aguardando revisão" : source.getString("name"),
@@ -162,14 +183,24 @@ public class IngestionService {
                 null,
                 List.of(),
                 null);
-        boolean saved = store.transaction(tx -> {
-          if (await(tx.get(imported)).exists()) return false;
-          articles.save(article);
-          tx.set(imported, map(
-              "articleId", id, "sourceId", sourceId,
-              "url", canonical, "importedAt", time(Instant.now())));
-          return true;
-        });
+        boolean saved =
+            store.transaction(
+                tx -> {
+                  if (await(tx.get(imported)).exists()) return false;
+                  articles.save(article);
+                  tx.set(
+                      imported,
+                      map(
+                          "articleId",
+                          id,
+                          "sourceId",
+                          sourceId,
+                          "url",
+                          canonical,
+                          "importedAt",
+                          time(Instant.now())));
+                  return true;
+                });
         if (saved) inserted++;
       }
       await(

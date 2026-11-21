@@ -72,8 +72,12 @@ public class RssFetcher {
     try (var input = response.body()) {
       if (response.statusCode() != 200)
         throw new IOException("Fonte retornou status " + response.statusCode());
-      boolean gzip = response.headers().firstValue("Content-Encoding")
-          .filter("gzip"::equalsIgnoreCase).isPresent();
+      boolean gzip =
+          response
+              .headers()
+              .firstValue("Content-Encoding")
+              .filter("gzip"::equalsIgnoreCase)
+              .isPresent();
       byte[] bytes = (gzip ? new GZIPInputStream(input) : input).readNBytes(2_000_001);
       if (bytes.length > 2_000_000) throw new IOException("Feed maior que 2MB");
       return parse(bytes);
@@ -91,8 +95,9 @@ public class RssFetcher {
 
   static String articleText(String html) {
     if (html == null) return "";
-    return java.util.Arrays.stream(html.replaceAll("(?is)<(script|style)[^>]*>.*?</\\1>", "")
-            .split("(?i)</(?:p|li|h[1-6]|blockquote)>|<br\\s*/?>|\\R\\s*\\R"))
+    return java.util.Arrays.stream(
+            html.replaceAll("(?is)<(script|style)[^>]*>.*?</\\1>", "")
+                .split("(?i)</(?:p|li|h[1-6]|blockquote)>|<br\\s*/?>|\\R\\s*\\R"))
         .map(RssFetcher::text)
         .filter(part -> !part.isBlank())
         .collect(java.util.stream.Collectors.joining("\n\n"));

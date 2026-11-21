@@ -14,15 +14,19 @@ import org.springframework.stereotype.Component;
 @ConditionalOnProperty(name = "radar.ingestion.enabled", havingValue = "true")
 public class IngestionScheduler {
   private static final Logger LOG = LoggerFactory.getLogger(IngestionScheduler.class);
-  private static final Set<String> CATALOG_IDS = TechFeeds.catalog(true).stream()
-      .map(TechFeeds.Feed::id).collect(Collectors.toUnmodifiableSet());
+  private static final Set<String> CATALOG_IDS =
+      TechFeeds.catalog(true).stream()
+          .map(TechFeeds.Feed::id)
+          .collect(Collectors.toUnmodifiableSet());
 
   private final PostgresStore store;
   private final IngestionService service;
   private final boolean catalogEnabled;
   private final boolean licensedFeeds;
 
-  public IngestionScheduler(PostgresStore store, IngestionService service,
+  public IngestionScheduler(
+      PostgresStore store,
+      IngestionService service,
       @Value("${radar.ingestion.tech-feeds-enabled}") boolean catalogEnabled,
       @Value("${radar.ingestion.licensed-feeds-enabled}") boolean licensedFeeds) {
     this.store = store;

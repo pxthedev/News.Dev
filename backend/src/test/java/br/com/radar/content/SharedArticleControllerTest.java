@@ -18,8 +18,13 @@ class SharedArticleControllerTest {
     when(repository.find("example")).thenReturn(article(true, Instant.now().minusSeconds(5)));
     var response = controller.shared("example");
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-    assertThat(response.getBody()).contains("radar://materia/example?source=share",
-        "/m/example", "&lt;unsafe&gt;", "Fontes", "Veículo");
+    assertThat(response.getBody())
+        .contains(
+            "radar://materia/example?source=share",
+            "/m/example",
+            "&lt;unsafe&gt;",
+            "Fontes",
+            "Veículo");
     assertThat(response.getBody()).doesNotContain("<unsafe>", "javascript:");
   }
 
@@ -32,9 +37,26 @@ class SharedArticleControllerTest {
   }
 
   private static ContentModels.Article article(boolean confirmed, Instant published) {
-    return new ContentModels.Article("example", "Título <unsafe>", List.of("Sinopse"),
-        "Conteúdo <unsafe>", "ia", null, null, published, published,
+    return new ContentModels.Article(
+        "example",
+        "Título <unsafe>",
+        List.of("Sinopse"),
+        "Conteúdo <unsafe>",
+        "ia",
+        null,
+        null,
+        published,
+        published,
         List.of(new ContentModels.Source("Veículo", "javascript:alert(1)", null, null)),
-        1, false, null, "normal", confirmed, 1, null, null, List.of(), null);
+        1,
+        false,
+        null,
+        "normal",
+        confirmed,
+        1,
+        null,
+        null,
+        List.of(),
+        null);
   }
 }

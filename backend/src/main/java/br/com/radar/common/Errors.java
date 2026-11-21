@@ -74,8 +74,6 @@ public class Errors {
     LoggerFactory.getLogger(Errors.class).error("Falha ao processar requisição", e);
     return ResponseEntity.internalServerError()
         .body(
-            body(
-                "internal_error",
-                "O news.dev está instável agora. Tente de novo em instantes."));
+            body("internal_error", "O news.dev está instável agora. Tente de novo em instantes."));
   }
 }

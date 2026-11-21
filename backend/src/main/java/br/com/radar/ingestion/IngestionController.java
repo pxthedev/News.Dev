@@ -25,7 +25,8 @@ public class IngestionController {
       @PathVariable @Pattern(regexp = "[a-z0-9-]{1,80}") String id,
       @RequestBody IngestionService.SourceConfig source) {
     service.save(
-        new IngestionService.SourceConfig(id, source.name(), source.url(), source.category(), source.allowFullText()));
+        new IngestionService.SourceConfig(
+            id, source.name(), source.url(), source.category(), source.allowFullText()));
   }
 
   @GetMapping

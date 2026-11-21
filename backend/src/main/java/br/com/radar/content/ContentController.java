@@ -21,7 +21,12 @@ public class ContentController {
   private final ArticleTranslation translations;
   private final IdentityRepository identities;
 
-  public ContentController(ContentRepository repo, ContentService service, UserRepository users, ArticleTranslation translations, IdentityRepository identities) {
+  public ContentController(
+      ContentRepository repo,
+      ContentService service,
+      UserRepository users,
+      ArticleTranslation translations,
+      IdentityRepository identities) {
     this.repo = repo;
     this.service = service;
     this.users = users;
@@ -72,7 +77,9 @@ public class ContentController {
   ArticleTranslation.Translated translation(
       @AuthenticationPrincipal Jwt jwt, @PathVariable String id, @RequestParam String language) {
     if (identities.user(jwt.getSubject()).getString("email") == null)
-      throw new ApiException(org.springframework.http.HttpStatus.FORBIDDEN, "account_required",
+      throw new ApiException(
+          org.springframework.http.HttpStatus.FORBIDDEN,
+          "account_required",
           "Entre com uma conta para traduzir matérias.");
     return translations.translate(repo.find(id), language);
   }
