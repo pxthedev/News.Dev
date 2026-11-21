@@ -6,6 +6,7 @@ import java.time.Instant;
 import java.util.List;
 
 public final class ContentModels {
+  public static final int CATEGORY_COUNT = 13;
   public static final String CATEGORY =
       "ia|seguranca|bigtech|programacao|chips|startups|gadgets|games|regulacao|cripto|tech-br|espaco|dados";
 

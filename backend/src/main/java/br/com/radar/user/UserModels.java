@@ -11,7 +11,7 @@ public final class UserModels {
       @NotNull @Pattern(regexp = "([01][0-9]|2[0-3]):[0-5][0-9]") String to) {}
 
   public record Prefs(
-      @NotNull @Size(max = 12)
+      @NotNull @Size(max = ContentModels.CATEGORY_COUNT)
           List<@NotNull @Pattern(regexp = ContentModels.CATEGORY) String> topics,
       @NotNull @Pattern(regexp = "urgent|balanced|realtime") String alertLevel,
       @NotNull @Size(max = 10)

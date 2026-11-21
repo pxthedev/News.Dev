@@ -281,7 +281,7 @@ class ApiIntegrationTest {
         .andExpect(jsonPath("$.items.length()").value(2));
     mvc.perform(get("/v1/explore").header("Authorization", "Bearer " + user))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.topics.length()").value(12))
+        .andExpect(jsonPath("$.topics.length()").value(13))
         .andExpect(jsonPath("$.people[0].id").value("jensen-huang"));
   }
 
