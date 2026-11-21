@@ -4,24 +4,24 @@ import 'package:material_ui/material_ui.dart';
 /// Espelha a seção 3 do PROMPT_RADAR.md e as variáveis do Figma.
 
 abstract final class RColors {
-  static const bgBase = Color(0xFF0C1020);
-  static const bgCard = Color(0xFF171D31);
-  static const bgElevated = Color(0xFF222B45);
-  static const bgControl = Color(0xFF303C5A);
+  static const bgBase = Color(0xFF000000);
+  static const bgCard = Color(0xFF1C1C1E);
+  static const bgElevated = Color(0xFF2C2C2E);
+  static const bgControl = Color(0xFF3A3A3C);
 
   static const textPrimary = Color(0xFFFFFFFF);
-  static const textSecondary = Color(0xFFA8B1CB);
-  static const textTertiary = Color(0xFF8490AF);
+  static const textSecondary = Color(0xFF8E8E93);
+  static const textTertiary = Color(0xFF636366);
 
-  static const radar = Color(0xFFA5B4FC);
-  static const onRadar = Color(0xFF141B36);
+  static const radar = Color(0xFFD4FF3A);
+  static const onRadar = Color(0xFF0D1400);
 
   static const urgent = Color(0xFFFF453A);
   static const link = Color(0xFF0A84FF);
   static const purple = Color(0xFFBF5AF2);
   static const orange = Color(0xFFFF9F0A);
 
-  static const separator = Color(0xFF343F59);
+  static const separator = Color(0xFF38383A);
 
   /// Fundo de ícones: cor da categoria com 16–18% de opacidade.
   static Color tint(Color c, [double alpha = 0.17]) => c.withValues(alpha: alpha);

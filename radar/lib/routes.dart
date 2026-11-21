@@ -14,6 +14,7 @@ import 'screens/previews/previews_screen.dart';
 import 'screens/search_screen.dart';
 import 'screens/topic_screen.dart';
 import 'services/analytics.dart';
+import 'state/app_state.dart';
 import 'widgets/account_gate.dart';
 
 final rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -95,13 +96,24 @@ abstract final class Routes {
   /// Converte um deep link em rota. Ligue no pacote app_links:
   /// `AppLinks().uriLinkStream.listen(Routes.handleDeepLink);`
   static RouteSettings? fromUri(Uri uri) {
-    if (uri.scheme != 'radar') return null;
     final seg = uri.pathSegments;
+    if (uri.scheme == 'https' &&
+        uri.host == Article.shareHost &&
+        uri.userInfo.isEmpty &&
+        uri.port == 443 &&
+        seg.length == 2 &&
+        seg.first == 'm' &&
+        _validArticleId(seg.last)) {
+      return RouteSettings(
+          name: article, arguments: ArticleArgs(seg.last, source: 'share'));
+    }
+    if (uri.scheme != 'radar') return null;
     return switch (uri.host) {
-      'materia' when seg.isNotEmpty => RouteSettings(
-          name: article,
-          arguments: ArticleArgs(seg.first,
-              source: uri.queryParameters['source'] ?? 'push')),
+      'materia' when seg.length == 1 && _validArticleId(seg.first) =>
+        RouteSettings(
+            name: article,
+            arguments: ArticleArgs(seg.first,
+                source: uri.queryParameters['source'] ?? 'push')),
       'topico' when seg.isNotEmpty =>
         RouteSettings(name: topic, arguments: NewsCategory.fromSlug(seg.first)),
       'alertas' => const RouteSettings(name: alerts),
@@ -113,11 +125,20 @@ abstract final class Routes {
     };
   }
 
+  static bool _validArticleId(String id) =>
+      RegExp(r'^[a-z0-9-]{1,100}$').hasMatch(id);
+
   static void handleDeepLink(Uri uri) {
     final s = fromUri(uri);
     if (s == null) return;
     if (s.arguments is ArticleArgs) {
       final a = s.arguments as ArticleArgs;
+      final state = AppScope.read(_nav.context);
+      if (a.source == 'share' && !state.isAccount) {
+        state.pendingSharedArticle = a.id;
+        _nav.pushNamed(account);
+        return;
+      }
       openArticle(a.id, source: a.source);
       return;
     }

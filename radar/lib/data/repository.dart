@@ -90,6 +90,10 @@ abstract class RadarRepository {
   /// Cache primeiro; se não tiver, busca. null = matéria não existe (404).
   Future<Article?> article(String id);
 
+  Future<ArticleTranslation> translateArticle(
+          String id, String language) async =>
+      throw const RepoException('Tradução indisponível.');
+
   /// Várias matérias de uma vez (salvos, ranking). Ids inexistentes são ignorados.
   Future<List<Article>> articles(List<String> ids);
 

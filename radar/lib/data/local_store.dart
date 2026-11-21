@@ -59,6 +59,10 @@ class LocalStore {
       _p.setString(key, jsonEncode(value));
 
   // ---- Estado do app (preferências, salvos, buscas…)
+  String? get appLanguage => _p.getString('app_language.v1');
+  Future<void> writeAppLanguage(String code) =>
+      _p.setString('app_language.v1', code);
+
   Json? readState() => _readJson(_kState);
   Future<void> writeState(Json state) => _writeJson(_kState, state);
 

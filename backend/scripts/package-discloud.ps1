@@ -21,7 +21,7 @@ try {
 $jarPath = Join-Path $backend 'target/radar-api-discloud.jar'
 $outputDir = Join-Path (Split-Path -Parent $backend) 'artifacts/discloud'
 New-Item -ItemType Directory -Path $outputDir -Force | Out-Null
-$zipName = if ($IncludeLocalEnv) { 'nexora-tech-discloud-privado.zip' } else { 'nexora-tech-discloud.zip' }
+$zipName = if ($IncludeLocalEnv) { 'news.dev-discloud-privado.zip' } else { 'news.dev-discloud.zip' }
 $outputPath = Join-Path $outputDir $zipName
 $config = (Get-Content -Raw -LiteralPath (Join-Path $backend 'discloud.config')) -replace '(?m)^ID=[^\r\n]*', "ID=$Subdomain"
 

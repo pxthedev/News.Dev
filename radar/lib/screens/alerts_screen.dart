@@ -1,3 +1,4 @@
+import '../l10n/app_copy.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../data/models.dart';
@@ -42,7 +43,7 @@ class AlertsScreen extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 8),
-            Semantics(header: true, child: Text('Alertas', style: RText.largeTitle)),
+            Semantics(header: true, child: Text(context.tr('Alertas'), style: RText.largeTitle)),
             const SizedBox(height: 16),
             if (state.alerts.isEmpty)
               const EmptyState(

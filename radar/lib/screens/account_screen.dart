@@ -1,3 +1,5 @@
+import '../l10n/app_copy.dart';
+
 import 'package:material_ui/material_ui.dart';
 import '../data/api/api_client.dart';
 import '../data/api/http_repository.dart';
@@ -178,7 +180,7 @@ class _AccountScreenState extends State<AccountScreen> {
             _Mode.reset => 'Criar nova senha'
           };
     return Scaffold(
-      appBar: AppBar(title: Text(title)),
+      appBar: AppBar(title: Text(context.tr(title))),
       body: SafeArea(
           child: Center(
               child: ConstrainedBox(
@@ -220,22 +222,22 @@ class _AccountScreenState extends State<AccountScreen> {
                               if (_mode == _Mode.register) ...[
                                 TextFormField(
                                     controller: _name,
-                                    decoration: const InputDecoration(
-                                        labelText: 'Nome'),
+                                    decoration: InputDecoration(
+                                        labelText: context.tr('Nome')),
                                     autofillHints: const [AutofillHints.name],
                                     maxLength: 80,
                                     enabled: !_busy,
                                     validator: (value) =>
                                         (value?.trim().isEmpty ?? true)
-                                            ? 'Informe seu nome.'
+                                            ? context.tr('Informe seu nome.')
                                             : null),
                                 const SizedBox(height: 12),
                               ],
                               if (_mode != _Mode.reset) ...[
                                 TextFormField(
                                     controller: _email,
-                                    decoration: const InputDecoration(
-                                        labelText: 'Email'),
+                                    decoration: InputDecoration(
+                                        labelText: context.tr('Email')),
                                     keyboardType: TextInputType.emailAddress,
                                     autofillHints: const [AutofillHints.email],
                                     autocorrect: false,
@@ -245,14 +247,15 @@ class _AccountScreenState extends State<AccountScreen> {
                                             RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$')
                                                 .hasMatch(value.trim())
                                         ? null
-                                        : 'Informe um email válido.'),
+                                        : context
+                                            .tr('Informe um email válido.')),
                                 const SizedBox(height: 12),
                               ],
                               if (_mode != _Mode.forgot) ...[
                                 TextFormField(
                                     controller: _password,
                                     decoration: InputDecoration(
-                                        labelText: 'Senha',
+                                        labelText: context.tr('Senha'),
                                         suffixIcon: IconButton(
                                             onPressed: () => setState(
                                                 () => _visible = !_visible),
@@ -268,13 +271,14 @@ class _AccountScreenState extends State<AccountScreen> {
                                           : AutofillHints.newPassword
                                     ],
                                     enabled: !_busy,
-                                    validator: (value) =>
-                                        value == null || value.isEmpty
-                                            ? 'Informe sua senha.'
-                                            : _mode != _Mode.login &&
-                                                    value.length < 8
-                                                ? 'Use pelo menos 8 caracteres.'
-                                                : null,
+                                    validator: (value) => value == null ||
+                                            value.isEmpty
+                                        ? context.tr('Informe sua senha.')
+                                        : _mode != _Mode.login &&
+                                                value.length < 8
+                                            ? context.tr(
+                                                'Use pelo menos 8 caracteres.')
+                                            : null,
                                     onFieldSubmitted: (_) => _submit()),
                                 const SizedBox(height: 24),
                               ],
@@ -282,8 +286,8 @@ class _AccountScreenState extends State<AccountScreen> {
                                   _mode == _Mode.reset) ...[
                                 TextFormField(
                                   controller: _confirmPassword,
-                                  decoration: const InputDecoration(
-                                      labelText: 'Confirmar senha'),
+                                  decoration: InputDecoration(
+                                      labelText: context.tr('Confirmar senha')),
                                   obscureText: !_visible,
                                   enableSuggestions: false,
                                   autocorrect: false,

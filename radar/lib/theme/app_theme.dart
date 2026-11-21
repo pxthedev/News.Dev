@@ -24,7 +24,7 @@ ThemeData buildRadarTheme() {
     textTheme: base.textTheme.apply(bodyColor: RColors.textPrimary, displayColor: RColors.textPrimary),
     textSelectionTheme: const TextSelectionThemeData(
       cursorColor: RColors.radar,
-      selectionColor: Color(0x55A5B4FC),
+      selectionColor: Color(0x55D4FF3A),
       selectionHandleColor: RColors.radar,
     ),
     cupertinoOverrideTheme: const CupertinoThemeData(brightness: Brightness.dark, primaryColor: RColors.radar),

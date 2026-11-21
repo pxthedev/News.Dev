@@ -4,6 +4,7 @@ import 'dart:ui' show ImageFilter;
 import 'package:material_ui/material_ui.dart';
 
 import '../data/models.dart';
+import '../l10n/app_copy.dart';
 import '../routes.dart';
 import '../state/app_state.dart';
 import '../theme/tokens.dart';
@@ -65,7 +66,7 @@ class _TabButton extends StatelessWidget {
     return Semantics(
       button: true,
       selected: active,
-      label: item.label,
+      label: context.tr(item.label),
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: onTap,
@@ -89,7 +90,7 @@ class _TabButton extends StatelessWidget {
                   child: active
                       ? Padding(
                           padding: const EdgeInsets.only(left: 6),
-                          child: Text(item.label, style: RText.headline.withColor(RColors.onRadar), maxLines: 1),
+                          child: Text(context.tr(item.label), style: RText.headline.withColor(RColors.onRadar), maxLines: 1),
                         )
                       : const SizedBox.shrink(),
                 ),

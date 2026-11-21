@@ -13,7 +13,7 @@ import '../state/app_state.dart';
 import '../theme/tokens.dart';
 import '../utils/format.dart';
 import '../widgets/primitives.dart';
-import '../widgets/system.dart';
+import '../l10n/app_copy.dart';
 
 /// 06 · Matéria
 class ArticleScreen extends StatefulWidget {
@@ -28,6 +28,8 @@ class _ArticleScreenState extends State<ArticleScreen> {
   final _scroll = ScrollController();
   bool _reachedEnd = false;
   bool _showFullArticle = false;
+  AppLanguage? _translationLanguage;
+  Future<ArticleTranslation>? _translation;
   Article? _article;
   bool _fetching = false;
   String? _error;
@@ -109,50 +111,6 @@ class _ArticleScreenState extends State<ArticleScreen> {
     }
   }
 
-  Future<void> _chooseTranslation(Uri source) async {
-    final language = await showRSheet<String>(
-      context,
-      builder: (sheet) => Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text('Traduzir notícia', style: RText.title2),
-          const SizedBox(height: 8),
-          Text(
-              'Escolha o idioma para abrir a publicação traduzida pelo Google.',
-              style: RText.subheadline.withColor(RColors.textSecondary)),
-          const SizedBox(height: 12),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              for (final (code, label) in const [
-                ('pt', 'Português'),
-                ('en', 'Inglês'),
-                ('es', 'Espanhol'),
-                ('fr', 'Francês'),
-                ('de', 'Alemão'),
-                ('it', 'Italiano'),
-                ('ja', 'Japonês'),
-                ('ko', 'Coreano'),
-                ('zh-CN', 'Chinês (simplificado)'),
-                ('ar', 'Árabe'),
-                ('hi', 'Hindi'),
-                ('ru', 'Russo'),
-              ])
-                RChip(label, onTap: () => Navigator.of(sheet).pop(code)),
-            ],
-          ),
-        ],
-      ),
-    );
-    if (!mounted || language == null) return;
-    await _openReadingLink(Uri.https('translate.google.com', '/translate', {
-      'sl': 'auto',
-      'tl': language,
-      'u': source.toString(),
-    }));
-  }
-
   @override
   Widget build(BuildContext context) {
     final state = AppScope.of(context);
@@ -203,27 +161,68 @@ class _ArticleScreenState extends State<ArticleScreen> {
       );
     }
 
+    final language = state.language;
+    final internationalRss = article.id.startsWith('rss-') &&
+        article.sources.length == 1 &&
+        const {
+          'TechCrunch',
+          'Ars Technica',
+          'WIRED',
+          'The Verge',
+          'MIT Technology Review',
+          'BBC News',
+          'The Guardian',
+          'The New York Times',
+          'dbt Labs',
+          'Microsoft Power BI'
+        }.contains(article.sources.single.name);
+    final shouldTranslate =
+        language != AppLanguage.portuguese || internationalRss;
+    if (shouldTranslate && _translationLanguage != language) {
+      _translationLanguage = language;
+      _translation = state.repo.translateArticle(article.id, language.code);
+    } else if (!shouldTranslate) {
+      _translationLanguage = null;
+      _translation = null;
+    }
+    return FutureBuilder<ArticleTranslation>(
+      key: ValueKey(language),
+      future: _translation,
+      builder: (context, result) => _reader(
+          context,
+          state,
+          article,
+          result.data,
+          result.connectionState == ConnectionState.waiting,
+          result.hasError,
+          top,
+          bottom),
+    );
+  }
+
+  Widget _reader(
+      BuildContext context,
+      AppState state,
+      Article article,
+      ArticleTranslation? translation,
+      bool translating,
+      bool translationFailed,
+      double top,
+      double bottom) {
     final saved = state.isSaved(article.id);
-    final paragraphs = article.body
+    final paragraphs = (translation?.body ?? article.body)
         .split(RegExp(r'\r?\n\s*\r?\n'))
         .map((paragraph) => paragraph.trim())
         .where((paragraph) => paragraph.isNotEmpty)
         .toList();
-    final synopsis = _synopsis(article.summary, paragraphs);
+    final synopsis = _synopsis(
+        translation == null ? article.summary : [translation.synopsis],
+        paragraphs);
     final publisher = article.id.startsWith('rss-') &&
             article.confirmed &&
-            article.sources.length == 1 &&
-            paragraphs.isEmpty
+            article.sources.length == 1
         ? article.sources.single
         : null;
-    final sourceUrl = article.sources
-        .map((source) => Uri.tryParse(source.url))
-        .whereType<Uri>()
-        .where((url) =>
-            (url.scheme == 'http' || url.scheme == 'https') &&
-            url.host.isNotEmpty &&
-            url.userInfo.isEmpty)
-        .firstOrNull;
     final gutter = math.max(
       RSpace.screen,
       (MediaQuery.sizeOf(context).width - 744) / 2,
@@ -287,7 +286,8 @@ class _ArticleScreenState extends State<ArticleScreen> {
                 const SizedBox(height: 12),
                 Semantics(
                     header: true,
-                    child: Text(article.title, style: RText.title1)),
+                    child: Text(translation?.title ?? article.title,
+                        style: RText.title1)),
                 const SizedBox(height: 12),
                 if (publisher != null)
                   _MetaLine(
@@ -323,37 +323,38 @@ class _ArticleScreenState extends State<ArticleScreen> {
                   const SizedBox(height: 24),
                   _SynopsisCard(text: synopsis),
                 ],
-                if (paragraphs.isNotEmpty || sourceUrl != null) ...[
+                if (translating || translationFailed) ...[
+                  const SizedBox(height: 10),
+                  Text(
+                      context.tr(translating
+                          ? 'Traduzindo…'
+                          : 'Tradução indisponível. Exibindo o original.'),
+                      style: RText.footnote.withColor(RColors.textSecondary)),
+                  if (translationFailed)
+                    RButton('Tentar de novo',
+                        kind: RButtonKind.text,
+                        onPressed: () =>
+                            setState(() => _translationLanguage = null)),
+                ],
+                if (paragraphs.isNotEmpty) ...[
                   const SizedBox(height: 16),
                   RButton(
                     _showFullArticle
                         ? 'Recolher matéria'
                         : 'Ler matéria completa',
-                    icon: paragraphs.isEmpty
-                        ? Icons.open_in_new
-                        : _showFullArticle
-                            ? Icons.expand_less
-                            : Icons.expand_more,
-                    onPressed: paragraphs.isNotEmpty
-                        ? () =>
-                            setState(() => _showFullArticle = !_showFullArticle)
-                        : () => _openReadingLink(sourceUrl!),
-                  ),
-                ],
-                if (sourceUrl != null) ...[
-                  const SizedBox(height: 8),
-                  RButton(
-                    'Traduzir notícia',
-                    icon: Icons.translate,
-                    kind: RButtonKind.secondary,
-                    onPressed: () => _chooseTranslation(sourceUrl),
+                    icon: _showFullArticle
+                        ? Icons.expand_less
+                        : Icons.expand_more,
+                    onPressed: () =>
+                        setState(() => _showFullArticle = !_showFullArticle),
                   ),
                 ],
                 if (_showFullArticle && paragraphs.isNotEmpty) ...[
                   const SizedBox(height: 28),
                   Semantics(
                     header: true,
-                    child: Text('Matéria completa', style: RText.title3),
+                    child: Text(context.tr('Matéria completa'),
+                        style: RText.title3),
                   ),
                   const SizedBox(height: 12),
                   for (final paragraph in paragraphs)
@@ -363,18 +364,29 @@ class _ArticleScreenState extends State<ArticleScreen> {
                           style: RText.body.withColor(RColors.textSecondary)),
                     ),
                 ],
-                if (publisher == null && article.sources.isNotEmpty) ...[
+                if (paragraphs.isEmpty) ...[
+                  const SizedBox(height: 12),
+                  Text(context.tr('A fonte disponibilizou apenas um trecho.'),
+                      style: RText.footnote.withColor(RColors.textSecondary)),
+                ],
+                if (article.sources.isNotEmpty &&
+                    (_showFullArticle || paragraphs.isEmpty)) ...[
                   const SizedBox(height: 16),
-                  Text('Fontes', style: RText.headline),
+                  Text(context.tr('Fontes'), style: RText.headline),
                   const SizedBox(height: 10),
                   Wrap(
                     spacing: 8,
                     runSpacing: 8,
                     children: [
                       for (final s in article.sources)
-                        RChip(s.name,
-                            onTap: () =>
-                                PlatformServices.instance.openUrl(s.url)),
+                        if (Uri.tryParse(s.url) case final url?
+                            when (url.scheme == 'https' ||
+                                    url.scheme == 'http') &&
+                                url.host.isNotEmpty &&
+                                url.userInfo.isEmpty)
+                          RChip(s.name, onTap: () => _openReadingLink(url))
+                        else
+                          RChip(s.name),
                       if (article.sourceCount > article.sources.length)
                         RChip(
                             '+${article.sourceCount - article.sources.length}'),
@@ -392,19 +404,14 @@ class _ArticleScreenState extends State<ArticleScreen> {
 }
 
 String _synopsis(List<String> summary, List<String> paragraphs) {
-  final points = summary
+  final excerpt = [...summary, ...paragraphs]
       .map((point) => point.replaceAll(RegExp(r'\s+'), ' ').trim())
-      .where((point) => point.isNotEmpty)
-      .toSet();
-  if (points.isNotEmpty) {
-    return points.map((point) {
-      return RegExp(r'[.!?…]["”’)]*$').hasMatch(point) ? point : '$point.';
-    }).join(' ');
-  }
-  if (paragraphs.isEmpty) return '';
-  final words = paragraphs.first.split(RegExp(r'\s+'));
-  if (words.length <= 48) return words.join(' ');
-  return '${words.take(48).join(' ')}…';
+      .where((text) => text.isNotEmpty)
+      .firstOrNull;
+  if (excerpt == null || excerpt.runes.length <= 180) return excerpt ?? '';
+  final prefix = String.fromCharCodes(excerpt.runes.take(179));
+  final word = prefix.lastIndexOf(' ');
+  return '${word > prefix.length ~/ 2 ? prefix.substring(0, word) : prefix}…';
 }
 
 class _HeroImage extends StatelessWidget {
@@ -493,7 +500,7 @@ class _SynopsisCard extends StatelessWidget {
               const SizedBox(width: 8),
               Semantics(
                 header: true,
-                child: Text('Sinopse', style: RText.headline),
+                child: Text(context.tr('Sinopse'), style: RText.headline),
               ),
             ],
           ),

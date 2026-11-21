@@ -2,6 +2,8 @@ package br.com.radar.content;
 
 import static br.com.radar.content.ContentModels.*;
 
+import br.com.radar.auth.IdentityRepository;
+import br.com.radar.common.ApiException;
 import br.com.radar.user.UserRepository;
 import jakarta.validation.constraints.*;
 import java.time.Instant;
@@ -16,11 +18,15 @@ public class ContentController {
   private final ContentRepository repo;
   private final ContentService service;
   private final UserRepository users;
+  private final ArticleTranslation translations;
+  private final IdentityRepository identities;
 
-  public ContentController(ContentRepository repo, ContentService service, UserRepository users) {
+  public ContentController(ContentRepository repo, ContentService service, UserRepository users, ArticleTranslation translations, IdentityRepository identities) {
     this.repo = repo;
     this.service = service;
     this.users = users;
+    this.translations = translations;
+    this.identities = identities;
   }
 
   @GetMapping("/home")
@@ -60,6 +66,15 @@ public class ContentController {
   @GetMapping("/articles/{id}")
   Article article(@PathVariable String id) {
     return repo.find(id);
+  }
+
+  @GetMapping("/articles/{id}/translation")
+  ArticleTranslation.Translated translation(
+      @AuthenticationPrincipal Jwt jwt, @PathVariable String id, @RequestParam String language) {
+    if (identities.user(jwt.getSubject()).getString("email") == null)
+      throw new ApiException(org.springframework.http.HttpStatus.FORBIDDEN, "account_required",
+          "Entre com uma conta para traduzir matérias.");
+    return translations.translate(repo.find(id), language);
   }
 
   @GetMapping("/articles")

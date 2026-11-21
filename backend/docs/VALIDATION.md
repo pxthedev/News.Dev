@@ -186,20 +186,12 @@ O telefone ainda indicava 0.3.2 na última consulta. API Supabase permanece UP.
 O usuário confirmou a instalação manual da atualização pelo app Arquivos.
 
 
-## Identidade Nexora Tech · 19/11/2026
+## Identidade news.dev
 
-Nome público alterado para Nexora Tech nas telas, compartilhamento, mensagens,
-rótulos Android/iOS/web e textos do backend. IDs de instalação, deep links,
-credenciais, nomes das tabelas/schema Supabase e identificadores privados foram
-preservados. Novo símbolo gerado por image_gen e exportado para ícones e abertura.
-Fontes raster e arquivos de apresentação em brand/nexora-tech; gerador reprodutível
-em tools/branding/generate.mjs. A identidade anterior foi preservada.
+Marca e paleta aplicadas às telas, Android, iOS, web e mensagens do backend.
+O símbolo atual está em `brand/news.dev/app-icon.svg`. O gerador de ícones
+está em `tools/branding/generate.mjs`.
 
-Flutter analyze sem problemas e 38 testes aprovados com o novo nome. XML Android
-validado e ícones iOS conferidos quanto a dimensões e ausência de canal alfa.
-JAR 1.1.1 compilado/empacotado com -DskipTests (não foi reexecutada a integração
-PostgreSQL nesta alteração visual). O processo da API em execução permanece na
-versão anterior até o próximo reinício; Google Branding também é configuração
-externa e precisa ser atualizado no painel.
-
-APK Nexora Tech 0.5.0 (8) gerado, rótulo e assinatura verificados. O asset da nova logo foi comparado com o conteúdo real do APK e corresponde. Cópias com nomes anteriores foram mantidas para compatibilidade. A atualização mantém o mesmo identificador e certificado.
+A marca news.dev foi validada com os 38 testes Flutter. O APK 0.6.0 (11)
+teve rótulo e assinatura conferidos. O IPA 0.6.0 (build 2) foi gerado por
+GitHub Actions para assinatura pessoal no Sideloadly.

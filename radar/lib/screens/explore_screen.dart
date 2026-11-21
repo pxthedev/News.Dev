@@ -1,3 +1,4 @@
+import '../l10n/app_copy.dart';
 import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -45,7 +46,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
     final top = MediaQuery.paddingOf(context).top;
     final data = _data;
     final header = [
-      Semantics(header: true, child: Text('Explorar', style: RText.largeTitle)),
+      Semantics(header: true, child: Text(context.tr('Explorar'), style: RText.largeTitle)),
       const SizedBox(height: 14),
       const _SearchFieldButton(),
       const SizedBox(height: 16),

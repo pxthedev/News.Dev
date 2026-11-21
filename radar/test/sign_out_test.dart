@@ -49,9 +49,12 @@ void main() {
       await tester.pumpWidget(AppScope(
           state: state,
           child: const MaterialApp(
+              locale: Locale('pt', 'BR'),
+              supportedLocales: [Locale('pt', 'BR')],
+              localizationsDelegates: GlobalMaterialLocalizations.delegates,
               home: Scaffold(body: ProfileScreen()),
               onGenerateRoute: Routes.generate)));
-      await tester.ensureVisible(find.text('Sair da conta'));
+      await tester.scrollUntilVisible(find.text('Sair da conta'), 280);
       await tester.tap(find.text('Sair da conta'));
       await tester.pumpAndSettle();
       if (succeeds) {

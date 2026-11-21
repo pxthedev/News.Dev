@@ -24,7 +24,7 @@ public class IngestionService {
     this.articles = articles;
   }
 
-  public record SourceConfig(String id, String name, String url, String category) {}
+  public record SourceConfig(String id, String name, String url, String category, boolean allowFullText) {}
 
   public void save(SourceConfig source) {
     if (source.id() == null
@@ -48,7 +48,9 @@ public class IngestionService {
                     "category",
                     source.category(),
                     "enabled",
-                    true)));
+                    true,
+                    "allowFullText",
+                    source.allowFullText())));
   }
 
   public Map<String, Integer> run(String sourceId) {
@@ -123,6 +125,13 @@ public class IngestionService {
         var imported = store.doc("imports", key);
         if (store.get(imported).exists()) continue;
         Instant detected = now;
+        String fullText = Boolean.TRUE.equals(source.getBoolean("allowFullText"))
+            ? entry.getContents().stream()
+                .map(content -> RssFetcher.articleText(content.getValue()))
+                .filter(value -> !value.isBlank())
+                .findFirst().orElse("")
+            : "";
+        if (fullText.length() > 100_000) fullText = "";
 
         String summary =
             excerpt.isBlank()
@@ -135,8 +144,8 @@ public class IngestionService {
                 feed == null
                     ? List.of(summary, "Conteúdo importado por RSS, aguardando revisão editorial.",
                         "Leia os detalhes e a atribuição na fonte original.")
-                    : (excerpt.isBlank() ? List.of() : List.of(shortExcerpt(excerpt))),
-                feed == null ? (excerpt.isBlank() ? title : excerpt) : "",
+                    : (excerpt.isBlank() ? List.of() : List.of(br.com.radar.content.ArticleTranslation.shortSynopsis(excerpt))),
+                fullText,
                 category,
                 feed == null ? "Aguardando revisão" : source.getString("name"),
                 null,
@@ -175,12 +184,6 @@ public class IngestionService {
       await(ref.update("leaseUntil", time(Instant.EPOCH)));
     }
     return Map.of("imported", inserted);
-  }
-
-  private static String shortExcerpt(String excerpt) {
-    if (excerpt.length() <= 280) return excerpt;
-    int cut = excerpt.lastIndexOf(' ', 280);
-    return excerpt.substring(0, cut > 0 ? cut : 280).stripTrailing() + "…";
   }
 
   public static String canonical(URI uri) {

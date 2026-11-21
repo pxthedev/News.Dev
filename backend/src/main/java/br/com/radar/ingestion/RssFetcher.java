@@ -64,7 +64,7 @@ public class RssFetcher {
         http.send(
             HttpRequest.newBuilder(URI.create(url))
                 .timeout(Duration.ofSeconds(10))
-                .header("User-Agent", "NexoraTechFeedReader/1.0")
+                .header("User-Agent", "news.dev-feed-reader/1.0")
                 .header("Accept-Encoding", "gzip")
                 .GET()
                 .build(),
@@ -87,6 +87,15 @@ public class RssFetcher {
     builder.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
     builder.setExpandEntities(false);
     return new SyndFeedInput().build(builder.build(new ByteArrayInputStream(xml))).getEntries();
+  }
+
+  static String articleText(String html) {
+    if (html == null) return "";
+    return java.util.Arrays.stream(html.replaceAll("(?is)<(script|style)[^>]*>.*?</\\1>", "")
+            .split("(?i)</(?:p|li|h[1-6]|blockquote)>|<br\\s*/?>|\\R\\s*\\R"))
+        .map(RssFetcher::text)
+        .filter(part -> !part.isBlank())
+        .collect(java.util.stream.Collectors.joining("\n\n"));
   }
 
   public static String text(String html) {

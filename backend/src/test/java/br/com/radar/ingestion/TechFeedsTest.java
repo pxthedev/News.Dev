@@ -26,9 +26,17 @@ class TechFeedsTest {
   }
 
   @Test
+  void groupsDataCareersAnalyticsAndSpecialistFeeds() {
+    assertThat(TechFeeds.category("O que faz um analista de dados?", "", null)).isEqualTo("dados");
+    assertThat(TechFeeds.category("Python and SQL for reporting", "", null)).isEqualTo("dados");
+    assertThat(TechFeeds.category("Google publica novidades", "", "dados")).isEqualTo("dados");
+    assertThat(TechFeeds.category("Power BI sofre vazamento de dados", "", null)).isEqualTo("seguranca");
+  }
+
+  @Test
   void requiresOptInForLicensedPublishers() {
-    assertThat(TechFeeds.catalog(false)).hasSize(8)
+    assertThat(TechFeeds.catalog(false)).hasSize(10)
         .noneMatch(TechFeeds.Feed::licensedOnly);
-    assertThat(TechFeeds.catalog(true)).hasSize(11);
+    assertThat(TechFeeds.catalog(true)).hasSize(13);
   }
 }

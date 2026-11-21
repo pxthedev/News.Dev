@@ -1,3 +1,4 @@
+import '../l10n/app_copy.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../data/models.dart';
@@ -52,7 +53,9 @@ class _SavedScreenState extends State<SavedScreen> {
       padding:
           EdgeInsets.fromLTRB(20, top + 8, 20, RSize.tabClearance(context)),
       children: [
-        Semantics(header: true, child: Text('Salvos', style: RText.largeTitle)),
+        Semantics(
+            header: true,
+            child: Text(context.tr('Salvos'), style: RText.largeTitle)),
         const SizedBox(height: 14),
         Row(
           children: [
@@ -99,13 +102,14 @@ class _SavedScreenState extends State<SavedScreen> {
                           color: RColors.bgElevated,
                           borderRadius: BorderRadius.circular(RRadius.card),
                         ),
-                        child: const Row(
+                        child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(Icons.archive_outlined, color: RColors.radar),
-                            SizedBox(width: 6),
-                            Text('Arquivar',
-                                style: TextStyle(
+                            const Icon(Icons.archive_outlined,
+                                color: RColors.radar),
+                            const SizedBox(width: 6),
+                            Text(context.tr('Arquivar'),
+                                style: const TextStyle(
                                     color: RColors.radar,
                                     fontWeight: FontWeight.w600)),
                           ],

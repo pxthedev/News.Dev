@@ -68,3 +68,14 @@ somente com as permissões necessárias para o seu uso.
 
 Fontes cadastradas pelo endpoint de administração continuam usando
 `RSS_ALLOWED_HOSTS` e o fluxo de revisão editorial.
+
+### Leitura e idiomas
+
+O leitor mostra o texto completo quando existe um corpo editorial ou um feed
+autorizado fornece o conteúdo integral. Para um feed com permissão de
+republicação, habilite `allowFullText` ao cadastrar a fonte. O coletor usa o
+conteúdo publicado no próprio RSS e mantém a atribuição à fonte. Itens
+importados anteriormente continuam disponíveis como sinopses.
+
+A tradução de matérias usa a API do Gemini. Configure `GEMINI_API_KEY` no
+ambiente da API. Para trocar o modelo, defina `GEMINI_TRANSLATION_MODEL`. O app guarda a preferência localmente em Perfil.

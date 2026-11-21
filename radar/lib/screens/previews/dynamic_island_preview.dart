@@ -1,3 +1,4 @@
+import '../../l10n/app_copy.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../routes.dart';
@@ -37,7 +38,7 @@ class DynamicIslandPreview extends StatelessWidget {
                   const Spacer(),
                   Container(width: 6, height: 6, decoration: const BoxDecoration(color: RColors.urgent, shape: BoxShape.circle)),
                   const SizedBox(width: 5),
-                  Text('Ao vivo', style: RText.footnoteEmph.withColor(RColors.urgent)),
+                  Text(context.tr('Ao vivo'), style: RText.footnoteEmph.withColor(RColors.urgent)),
                   const SizedBox(width: 4),
                 ],
               ),

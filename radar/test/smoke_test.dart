@@ -5,6 +5,7 @@ import 'package:radar/data/mock_repository.dart';
 import 'package:radar/data/models.dart';
 import 'package:radar/data/repository.dart';
 import 'package:radar/routes.dart';
+import 'package:radar/l10n/app_copy.dart';
 import 'package:radar/state/app_state.dart';
 
 /// Abre o app já depois do onboarding e passa pelas telas que carregam dados do repositório.
@@ -22,7 +23,7 @@ void main() {
     };
     addTearDown(() => FlutterError.onError = onError);
 
-    final repo = MockRepository(latency: false);
+    final repo = _TranslationRepository();
     Repo.instance = repo;
     final state = _AuthenticatedState(repo);
     await state.refreshRemote();
@@ -46,6 +47,8 @@ void main() {
     expect(tester.getTopLeft(trending).dx,
         greaterThan(tester.getTopRight(hero).dx));
 
+    tester.view.physicalSize = const Size(1440, 1500);
+    await tester.pump();
     unawaited(Routes.openArticle('nvidia-fabrica'));
     await tester.pumpAndSettle();
     expect(find.textContaining('Confirmado por', skipOffstage: false),
@@ -65,13 +68,17 @@ void main() {
     final points = repo.byId('nvidia-fabrica')!.summary;
     expect(find.textContaining(points.first), findsOneWidget);
     expect(find.textContaining('Ouvir '), findsNothing);
-    final translateButton = find.text('Traduzir notícia');
-    await tester.ensureVisible(translateButton);
-    await tester.tap(translateButton);
+    expect(find.text('Fontes'), findsOneWidget);
+    expect(tester.getTopLeft(find.text('Fontes')).dy,
+        greaterThan(tester.getTopLeft(fullArticle).dy));
+    state.setLanguage(AppLanguage.english);
     await tester.pumpAndSettle();
-    expect(find.text('Português'), findsOneWidget);
-    expect(find.text('Inglês'), findsOneWidget);
-    rootNavigatorKey.currentState!.pop();
+    expect(find.text('Synopsis'), findsOneWidget);
+    expect(find.text('Translated synopsis.'), findsOneWidget);
+    expect(find.text('Translated full story.'), findsOneWidget);
+    expect(find.text('Full article'), findsOneWidget);
+    expect(find.text('Sources'), findsOneWidget);
+    state.setLanguage(AppLanguage.portuguese);
     await tester.pumpAndSettle();
 
     unawaited(Routes.openTopic(NewsCategory.ia));
@@ -100,4 +107,13 @@ class _AuthenticatedState extends AppState {
       : super(repo: repo, onboarded: true);
   @override
   bool get isAccount => true;
+}
+
+class _TranslationRepository extends MockRepository {
+  _TranslationRepository() : super(latency: false);
+  @override
+  Future<ArticleTranslation> translateArticle(
+          String id, String language) async =>
+      const ArticleTranslation(
+          'Translated title', 'Translated synopsis.', 'Translated full story.');
 }

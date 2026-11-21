@@ -26,8 +26,9 @@ Future<void> main() async {
 
   final store = await LocalStore.open();
   if (apiUrl.isNotEmpty) {
+    final baseUrl = kIsWeb ? Uri.base.resolve(apiUrl).toString() : apiUrl;
     Repo.instance =
-        HttpRepository(ApiClient(baseUrl: apiUrl, store: store), store);
+        HttpRepository(ApiClient(baseUrl: baseUrl, store: store), store);
   }
 
   final state = AppState(repo: Repo.instance, store: store)..restore();

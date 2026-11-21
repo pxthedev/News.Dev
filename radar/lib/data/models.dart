@@ -59,6 +59,17 @@ enum NewsCategory {
       Color(0xFF062A5C),
       10,
       1),
+  dados(
+      'dados',
+      'Área de dados',
+      'Área de dados',
+      'Análise de dados, SQL, BI, engenharia de dados e carreira.',
+      Icons.analytics_outlined,
+      Icons.analytics_outlined,
+      RColors.link,
+      Color(0xFF062A5C),
+      0,
+      0),
   chips(
       'chips',
       'Chips',
@@ -234,6 +245,19 @@ class Entity {
   Json toJson() => {'type': type, 'id': id, 'name': name};
 }
 
+class ArticleTranslation {
+  const ArticleTranslation(this.title, this.synopsis, this.body);
+  final String title;
+  final String synopsis;
+  final String body;
+
+  factory ArticleTranslation.fromJson(Json json) => ArticleTranslation(
+        json.str('title'),
+        json.str('synopsis'),
+        json.str('body'),
+      );
+}
+
 class Article {
   const Article({
     required this.id,
@@ -291,7 +315,8 @@ class Article {
     return extra > 0 ? '$names +$extra' : names;
   }
 
-  String get shareUrl => 'https://radar.app/m/$id';
+  static const shareHost = 'appnewsai.discloud.app';
+  String get shareUrl => Uri.https(shareHost, '/m/$id').toString();
   String get deepLink => 'radar://materia/$id';
 
   Article copyWith({String? id, DateTime? publishedAt, DateTime? detectedAt}) =>

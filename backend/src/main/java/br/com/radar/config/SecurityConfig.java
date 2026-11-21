@@ -82,6 +82,9 @@ public class SecurityConfig {
                 a.requestMatchers(
                         "/actuator/health", "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html")
                     .permitAll()
+                    .requestMatchers(org.springframework.http.HttpMethod.GET,
+                        "/m/*", "/.well-known/assetlinks.json")
+                    .permitAll()
                     .requestMatchers(
                         org.springframework.http.HttpMethod.POST,
                         "/v1/auth/anonymous",

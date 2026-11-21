@@ -7,7 +7,7 @@ import java.util.List;
 
 public final class ContentModels {
   public static final String CATEGORY =
-      "ia|seguranca|bigtech|programacao|chips|startups|gadgets|games|regulacao|cripto|tech-br|espaco";
+      "ia|seguranca|bigtech|programacao|chips|startups|gadgets|games|regulacao|cripto|tech-br|espaco|dados";
 
   public record Source(
       @NotBlank @Size(max = 100) String name,

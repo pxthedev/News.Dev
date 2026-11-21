@@ -1,3 +1,4 @@
+import '../l10n/app_copy.dart';
 import 'dart:async';
 
 import 'package:cupertino_ui/cupertino_ui.dart';
@@ -116,7 +117,7 @@ class _SearchScreenState extends State<SearchScreen> {
                     onTap: () => Navigator.of(context).pop(),
                     child: Padding(
                       padding: const EdgeInsets.symmetric(vertical: 10),
-                      child: Text('Cancelar', style: RText.body.withColor(RColors.radar)),
+                      child: Text(context.tr('Cancelar'), style: RText.body.withColor(RColors.radar)),
                     ),
                   ),
                 ],

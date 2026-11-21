@@ -1,6 +1,8 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 
+import '../l10n/app_copy.dart';
+
 import '../theme/tokens.dart';
 import '../theme/brand.dart';
 
@@ -116,7 +118,7 @@ class RButton extends StatelessWidget {
                 const SizedBox(width: 6)
               ],
               Flexible(
-                  child: Text(label,
+                  child: Text(context.tr(label),
                       style: style,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis)),
@@ -174,7 +176,7 @@ class RChip extends StatelessWidget {
               Icon(icon, size: 18, color: fg),
               const SizedBox(width: 8)
             ],
-            Text(label, style: RText.subheadlineEmph.withColor(fg)),
+            Text(context.tr(label), style: RText.subheadlineEmph.withColor(fg)),
             if (showCheck && active) ...[
               const SizedBox(width: 6),
               Icon(Icons.check, size: 16, color: fg)
@@ -230,7 +232,7 @@ class SegmentedPill extends StatelessWidget {
                   borderRadius: BorderRadius.circular(RRadius.pill),
                 ),
                 child: Text(
-                  segments[i],
+                  context.tr(segments[i]),
                   style: i == index
                       ? RText.footnoteEmph
                       : RText.footnote.withColor(RColors.textSecondary),
@@ -256,7 +258,7 @@ class RToggle extends StatelessWidget {
   Widget build(BuildContext context) {
     return Semantics(
       toggled: value,
-      label: label,
+      label: label == null ? null : context.tr(label!),
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: () {
@@ -436,7 +438,7 @@ class BrandLockup extends StatelessWidget {
                       fontWeight: FontWeight.w700, letterSpacing: -0.8)),
               if (showCategory) ...[
                 const SizedBox(height: 4),
-                Text(AppBrand.category,
+                Text(context.tr(AppBrand.category),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: RText.caption2
@@ -470,7 +472,8 @@ class FirstBadge extends StatelessWidget {
               decoration: const BoxDecoration(
                   color: RColors.radar, shape: BoxShape.circle)),
           const SizedBox(width: 6),
-          Text(label, style: RText.caption1Emph.withColor(RColors.radar)),
+          Text(context.tr(label),
+              style: RText.caption1Emph.withColor(RColors.radar)),
         ],
       ),
     );
@@ -499,7 +502,7 @@ class TintPill extends StatelessWidget {
             Icon(icon, size: 13, color: color),
             const SizedBox(width: 4)
           ],
-          Text(label, style: RText.caption1Emph.withColor(color)),
+          Text(context.tr(label), style: RText.caption1Emph.withColor(color)),
         ],
       ),
     );
@@ -527,7 +530,8 @@ class LivePill extends StatelessWidget {
               decoration: const BoxDecoration(
                   color: RColors.urgent, shape: BoxShape.circle)),
           const SizedBox(width: 5),
-          Text(label, style: RText.caption1Emph.withColor(RColors.urgent)),
+          Text(context.tr(label),
+              style: RText.caption1Emph.withColor(RColors.urgent)),
         ],
       ),
     );
@@ -639,13 +643,14 @@ class SectionHeader extends StatelessWidget {
       children: [
         Expanded(
             child: Semantics(
-                header: true, child: Text(title, style: RText.title3))),
+                header: true,
+                child: Text(context.tr(title), style: RText.title3))),
         if (action != null)
           Pressable(
             onTap: onAction,
             child: Padding(
               padding: const EdgeInsets.symmetric(vertical: 10),
-              child: Text(action!,
+              child: Text(context.tr(action!),
                   style: RText.subheadline.withColor(RColors.textSecondary)),
             ),
           ),
@@ -664,7 +669,7 @@ class GroupLabel extends StatelessWidget {
         padding: const EdgeInsets.only(left: 2, bottom: 8),
         child: Semantics(
           header: true,
-          child: Text(text,
+          child: Text(context.tr(text),
               style: RText.footnoteEmph
                   .copyWith(color: RColors.textSecondary, letterSpacing: 0.3)),
         ),
@@ -762,10 +767,11 @@ class EmptyState extends StatelessWidget {
         children: [
           IconTile(icon: icon, color: RColors.radar, size: 56),
           const SizedBox(height: 16),
-          Text(title, style: RText.headline, textAlign: TextAlign.center),
+          Text(context.tr(title),
+              style: RText.headline, textAlign: TextAlign.center),
           if (message != null) ...[
             const SizedBox(height: 6),
-            Text(message!,
+            Text(context.tr(message!),
                 style: RText.subheadline.withColor(RColors.textSecondary),
                 textAlign: TextAlign.center),
           ],

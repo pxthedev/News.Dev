@@ -5,7 +5,7 @@ param(
 )
 $ErrorActionPreference = 'Stop'
 $appRoot = Split-Path -Parent $PSScriptRoot
-$apk = Join-Path (Split-Path -Parent $appRoot) "artifacts/mobile/nexora-tech-$Mode.apk"
+$apk = Join-Path (Split-Path -Parent $appRoot) "artifacts/mobile/news.dev-$Mode.apk"
 if (-not (Test-Path -LiteralPath $apk)) { throw "APK não encontrado: $apk" }
 $adbCommand = Get-Command adb -ErrorAction SilentlyContinue
 $adb = if ($adbCommand) { $adbCommand.Source } else { Join-Path $env:LOCALAPPDATA 'Android/Sdk/platform-tools/adb.exe' }

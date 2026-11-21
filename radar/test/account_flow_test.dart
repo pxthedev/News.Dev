@@ -101,7 +101,11 @@ void main() {
       final state = AppState(repo: repo, store: store);
       await tester.pumpWidget(AppScope(
           state: state,
-          child: MaterialApp(home: AccountScreen(register: register))));
+          child: MaterialApp(
+              locale: const Locale('pt', 'BR'),
+              supportedLocales: const [Locale('pt', 'BR')],
+              localizationsDelegates: GlobalMaterialLocalizations.delegates,
+              home: AccountScreen(register: register))));
       final fields = find.byType(TextFormField);
       if (register) await tester.enterText(fields.at(0), 'Ana');
       await tester.enterText(fields.at(register ? 1 : 0), 'ana@example.com');
@@ -135,7 +139,12 @@ void main() {
             headers: {'content-type': 'application/json'})));
     final state = AppState(repo: HttpRepository(api, store));
     await tester.pumpWidget(AppScope(
-        state: state, child: const MaterialApp(home: AccountScreen())));
+        state: state,
+        child: const MaterialApp(
+            locale: Locale('pt', 'BR'),
+            supportedLocales: [Locale('pt', 'BR')],
+            localizationsDelegates: GlobalMaterialLocalizations.delegates,
+            home: AccountScreen())));
     await tester.enterText(find.byType(TextFormField).at(0), 'ana@example.com');
     await tester.enterText(find.byType(TextFormField).at(1), 'senha-errada');
     await tester.ensureVisible(find.text('Entrar'));

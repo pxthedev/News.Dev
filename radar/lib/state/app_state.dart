@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/services.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 
 import '../data/json.dart';
@@ -10,6 +11,7 @@ import '../data/mock_data.dart';
 import '../data/models.dart';
 import '../data/repository.dart';
 import '../services/analytics.dart';
+import '../l10n/app_copy.dart';
 import '../utils/format.dart';
 
 class ToastData {
@@ -34,6 +36,18 @@ class AppState extends ChangeNotifier {
   final LocalStore? store;
 
   bool onboarded;
+  String? pendingSharedArticle;
+  late final _language =
+      ValueNotifier(AppLanguage.fromCode(store?.appLanguage));
+  ValueListenable<AppLanguage> get languageListenable => _language;
+  AppLanguage get language => _language.value;
+
+  void setLanguage(AppLanguage language) {
+    if (_language.value == language) return;
+    _language.value = language;
+    unawaited(store?.writeAppLanguage(language.code));
+    notifyListeners();
+  }
 
   // Usuário
   String userName = 'Leitor';
@@ -538,6 +552,7 @@ class AppState extends ChangeNotifier {
 
   @override
   void dispose() {
+    _language.dispose();
     _disposed = true;
     _toastTimer?.cancel();
     _bannerTimer?.cancel();

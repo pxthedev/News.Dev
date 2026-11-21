@@ -2,6 +2,7 @@ import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 
+import '../../routes.dart';
 import '../../state/app_state.dart';
 import '../../theme/tokens.dart';
 import '../../widgets/primitives.dart';
@@ -9,13 +10,23 @@ import '../root_shell.dart';
 
 /// Conclui o onboarding: haptic de sucesso e entra no app sem volta.
 void finishOnboarding(BuildContext context) {
-  if (!AppScope.read(context).isAccount) return;
-  AppScope.read(context).completeOnboarding();
+  final state = AppScope.read(context);
+  if (!state.isAccount) return;
+  state.completeOnboarding();
+  final sharedArticle = state.pendingSharedArticle;
+  state.pendingSharedArticle = null;
   HapticFeedback.heavyImpact();
   Navigator.of(context).pushAndRemoveUntil(
     CupertinoPageRoute<void>(builder: (_) => const RootShell()),
     (_) => false,
   );
+  if (sharedArticle != null) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (rootNavigatorKey.currentState != null && state.isAccount) {
+        Routes.openArticle(sharedArticle, source: 'share');
+      }
+    });
+  }
 }
 
 class OnboardingProgress extends StatelessWidget {

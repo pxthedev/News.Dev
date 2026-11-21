@@ -57,22 +57,11 @@ try {
         if ($LASTEXITCODE -ne 0) { throw "Falha ao gerar APK $variant." }
         $fileName = if ($variant -eq 'hosted') {
             "news.dev-$($endpoint.IdnHost).apk"
-        } else { "nexora-tech-$variant.apk" }
+        } else { "news.dev-$variant.apk" }
         $destination = Join-Path $outputRoot $fileName
         Copy-Item -LiteralPath 'build/app/outputs/flutter-apk/app-release.apk' -Destination $destination -Force
         $hash = (Get-FileHash -LiteralPath $destination -Algorithm SHA256).Hash.ToLowerInvariant()
         [IO.File]::WriteAllText("$destination.sha256", "$hash  $fileName`n")
-        if ($variant -eq 'hosted') {
-            Write-Output "APK gerado: $destination"
-            continue
-        }
-        # Caminhos anteriores continuam disponíveis para comandos já enviados ao usuário.
-        $legacy = Join-Path $outputRoot "radar-$variant.apk"
-        Copy-Item -LiteralPath $destination -Destination $legacy -Force
-        [IO.File]::WriteAllText("$legacy.sha256", "$hash  radar-$variant.apk`n")
-        $previousBrand = Join-Path $outputRoot "fionova-$variant.apk"
-        Copy-Item -LiteralPath $destination -Destination $previousBrand -Force
-        [IO.File]::WriteAllText("$previousBrand.sha256", "$hash  fionova-$variant.apk`n")
         Write-Output "APK gerado: $destination"
     }
 } finally { Pop-Location }

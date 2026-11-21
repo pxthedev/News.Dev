@@ -1,3 +1,4 @@
+import '../l10n/app_copy.dart';
 import 'dart:async';
 
 import 'package:cupertino_ui/cupertino_ui.dart';
@@ -511,7 +512,7 @@ class _AdvantageCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Sua vantagem',
+              Text(context.tr('Sua vantagem'),
                   style: RText.footnote.withColor(RColors.textSecondary)),
               const SizedBox(height: 12),
               const ProgressRing(
@@ -555,7 +556,7 @@ class _TrendingCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Em alta hoje',
+            Text(context.tr('Em alta hoje'),
                 style: RText.footnote.withColor(RColors.textSecondary)),
             const SizedBox(height: 8),
             Text('#${t.tag}',

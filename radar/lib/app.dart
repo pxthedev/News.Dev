@@ -1,6 +1,7 @@
 import 'package:material_ui/material_ui.dart';
 
 import 'routes.dart';
+import 'l10n/app_copy.dart';
 import 'screens/onboarding/welcome_screen.dart';
 import 'screens/root_shell.dart';
 import 'screens/onboarding/topics_screen.dart';
@@ -17,21 +18,25 @@ class RadarApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return AppScope(
       state: state,
-      child: MaterialApp(
-        title: AppBrand.name,
-        debugShowCheckedModeBanner: false,
-        navigatorKey: rootNavigatorKey,
-        theme: buildRadarTheme(),
-        locale: const Locale('pt', 'BR'),
-        supportedLocales: const [Locale('pt', 'BR')],
-        localizationsDelegates: GlobalMaterialLocalizations.delegates,
-        home: state.isAccount
-            ? (state.onboarded ? const RootShell() : const TopicsScreen())
-            : const WelcomeScreen(),
-        onGenerateRoute: Routes.generate,
-        builder: (context, child) =>
-            OverlayHost(child: child ?? const SizedBox.shrink()),
-      ),
+      child: ValueListenableBuilder<AppLanguage>(
+          valueListenable: state.languageListenable,
+          builder: (context, language, _) {
+            return MaterialApp(
+              title: AppBrand.name,
+              debugShowCheckedModeBanner: false,
+              navigatorKey: rootNavigatorKey,
+              theme: buildRadarTheme(),
+              locale: language.locale,
+              supportedLocales: AppLanguage.values.map((value) => value.locale),
+              localizationsDelegates: GlobalMaterialLocalizations.delegates,
+              home: state.isAccount
+                  ? (state.onboarded ? const RootShell() : const TopicsScreen())
+                  : const WelcomeScreen(),
+              onGenerateRoute: Routes.generate,
+              builder: (context, child) =>
+                  OverlayHost(child: child ?? const SizedBox.shrink()),
+            );
+          }),
     );
   }
 }

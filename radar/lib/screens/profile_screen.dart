@@ -2,6 +2,7 @@ import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../routes.dart';
+import '../l10n/app_copy.dart';
 import '../sheets/community_sheet.dart';
 import '../state/app_state.dart';
 import '../theme/tokens.dart';
@@ -124,6 +125,39 @@ class ProfileScreen extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 24),
+        _SettingsGroup(
+          children: [
+            _SettingRow(
+              icon: Icons.language,
+              color: RColors.radar,
+              label: 'Idioma',
+              onTap: () async {
+                final language = await showRSheet<AppLanguage>(
+                  context,
+                  builder: (sheet) => Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Text(sheet.tr('Idioma do app'), style: RText.title2),
+                      const SizedBox(height: 12),
+                      Wrap(spacing: 8, runSpacing: 8, children: [
+                        for (final language in AppLanguage.values)
+                          RChip(language.label,
+                              active: state.language == language,
+                              onTap: () => Navigator.of(sheet).pop(language)),
+                      ]),
+                    ],
+                  ),
+                );
+                if (language != null && context.mounted) {
+                  state.setLanguage(language);
+                }
+              },
+              trailing: Text(state.language.label,
+                  style: RText.subheadline.withColor(RColors.textSecondary)),
+            ),
+          ],
+        ),
+        const SizedBox(height: 24),
         const GroupLabel('CONTA'),
         _SettingsGroup(
           children: [
@@ -206,7 +240,8 @@ class _WeekCard extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  Text('Sua semana', style: RText.footnoteEmph.withColor(dark)),
+                  Text(context.tr('Sua semana'),
+                      style: RText.footnoteEmph.withColor(dark)),
                   const Spacer(),
                   Container(
                     padding:
@@ -304,7 +339,7 @@ class _SettingRow extends StatelessWidget {
             children: [
               IconTile(icon: icon, color: color, size: 30),
               const SizedBox(width: 12),
-              Expanded(child: Text(label, style: RText.body)),
+              Expanded(child: Text(context.tr(label), style: RText.body)),
               trailing,
             ],
           ),

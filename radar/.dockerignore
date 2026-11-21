@@ -1,0 +1,11 @@
+*
+!.metadata
+!pubspec.yaml
+!pubspec.lock
+!lib/
+!lib/**
+!assets/
+!assets/**
+!web/
+!web/**
+!nginx.conf

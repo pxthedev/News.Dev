@@ -58,6 +58,11 @@ springdoc:
   swagger-ui:
     enabled: ${API_DOCS_ENABLED:false}
 radar:
+  share:
+    android-fingerprints: "${SHARE_ANDROID_FINGERPRINTS:CF:32:61:FC:32:FC:75:1A:B9:3D:2C:5C:C4:1B:4C:7E:A2:4C:62:BA:29:58:9A:81:0E:7D:3B:A1:88:CC:CA:D7}"
+  translation:
+    gemini-key: ${GEMINI_API_KEY:}
+    gemini-model: ${GEMINI_TRANSLATION_MODEL:gemini-3.5-flash-lite}
   supabase:
     url: ${SUPABASE_URL:}
     publishable-key: ${SUPABASE_PUBLISHABLE_KEY:}

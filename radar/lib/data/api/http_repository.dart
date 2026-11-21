@@ -89,6 +89,14 @@ class HttpRepository extends RadarRepository {
   }
 
   @override
+  Future<ArticleTranslation> translateArticle(
+          String id, String language) async =>
+      ArticleTranslation.fromJson(await _get(
+        '/v1/articles/${Uri.encodeComponent(id)}/translation',
+        {'language': language},
+      ));
+
+  @override
   Future<List<Article>> articles(List<String> ids) async {
     final missing = ids.where((id) => byId(id) == null).toList();
     if (missing.isNotEmpty) {
