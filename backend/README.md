@@ -74,8 +74,14 @@ Fontes cadastradas pelo endpoint de administração continuam usando
 O leitor mostra o texto completo quando existe um corpo editorial ou um feed
 autorizado fornece o conteúdo integral. Para um feed com permissão de
 republicação, habilite `allowFullText` ao cadastrar a fonte. O coletor usa o
-conteúdo publicado no próprio RSS e mantém a atribuição à fonte. Itens
-importados anteriormente continuam disponíveis como sinopses.
+conteúdo publicado no próprio RSS e mantém a atribuição à fonte. Quando o item
+ainda estiver no feed, uma nova coleta preenche o corpo de matérias importadas
+anteriormente que só tinham sinopse. Matérias sem texto integral disponibilizado
+continuam exibindo a sinopse e as fontes.
+
+Os comentários ficam vinculados à matéria e à conta que os publicou. Em bancos
+gerenciados pelo Flyway, a tabela é criada na inicialização da API. Para bancos
+configurados manualmente pelo SQL Editor, reaplique `supabase/schema.sql`.
 
 A tradução de matérias usa a API do Gemini. Configure `GEMINI_API_KEY` no
 ambiente da API. Para trocar o modelo, defina `GEMINI_TRANSLATION_MODEL`. O app guarda a preferência localmente em Perfil.

@@ -1,8 +1,7 @@
 import 'dart:math' as math;
 
-import 'package:flutter/foundation.dart';
-
 import 'package:cupertino_ui/cupertino_ui.dart';
+import 'package:flutter/rendering.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../data/models.dart';
@@ -16,7 +15,7 @@ import '../theme/tokens.dart';
 import '../utils/format.dart';
 import '../widgets/primitives.dart';
 import '../l10n/app_copy.dart';
-import 'publisher_reader_screen.dart';
+import '../widgets/article_comments.dart';
 
 /// 06 · Matéria
 class ArticleScreen extends StatefulWidget {
@@ -29,6 +28,7 @@ class ArticleScreen extends StatefulWidget {
 
 class _ArticleScreenState extends State<ArticleScreen> {
   final _scroll = ScrollController();
+  final _readingEnd = GlobalKey();
   bool _reachedEnd = false;
   bool _showFullArticle = false;
   AppLanguage? _translationLanguage;
@@ -43,7 +43,7 @@ class _ArticleScreenState extends State<ArticleScreen> {
     AppScope.read(context).registerArticleOpened();
     _scroll.addListener(_onScroll);
     _article = Repo.instance.byId(widget.articleId);
-    if (_article == null) _fetch();
+    if (_article == null || _article!.body.trim().isEmpty) _fetch();
   }
 
   /// Abriu por deep link, push ou widget: a matéria ainda não está em memória.
@@ -54,7 +54,12 @@ class _ArticleScreenState extends State<ArticleScreen> {
     });
     try {
       final a = await Repo.instance.article(widget.articleId);
-      if (mounted) setState(() => _article = a);
+      if (mounted && a != null) {
+        setState(() {
+          if (a.body != _article?.body) _translationLanguage = null;
+          _article = a;
+        });
+      }
     } on RepoException catch (e) {
       if (mounted) setState(() => _error = e.message);
     } finally {
@@ -71,12 +76,21 @@ class _ArticleScreenState extends State<ArticleScreen> {
   /// Momento positivo: terminou de ler. Pede avaliação ou mostra o teaser da comunidade.
   void _onScroll() {
     if (!_showFullArticle) return;
-    final pos = _scroll.position;
-    if (pos.maxScrollExtent > 0 && _article != null) {
-      AppScope.read(context)
-          .setReadProgress(_article!.id, pos.pixels / pos.maxScrollExtent);
+    final end = _readingEnd.currentContext?.findRenderObject();
+    final viewport = RenderAbstractViewport.maybeOf(end);
+    if (end == null || viewport == null) return;
+    final endOffset = viewport.getOffsetToReveal(end, 1).offset;
+    final remaining = endOffset - _scroll.position.pixels;
+    if (_article case final article?) {
+      final state = AppScope.read(context);
+      final progress = endOffset <= 0
+          ? 1.0
+          : (_scroll.position.pixels / endOffset).clamp(0.0, 1.0);
+      if (progress > (state.readProgress[article.id] ?? 0)) {
+        state.setReadProgress(article.id, progress);
+      }
     }
-    if (_reachedEnd || pos.extentAfter > 40) return;
+    if (_reachedEnd || remaining > 40) return;
     _reachedEnd = true;
     Repo.instance.recordRead(widget.articleId).catchError((Object _) {});
     final state = AppScope.read(context);
@@ -184,7 +198,6 @@ class _ArticleScreenState extends State<ArticleScreen> {
           result.data,
           result.connectionState == ConnectionState.waiting,
           result.hasError,
-          shouldTranslate ? language.code : null,
           top,
           bottom),
     );
@@ -197,7 +210,6 @@ class _ArticleScreenState extends State<ArticleScreen> {
       ArticleTranslation? translation,
       bool translating,
       bool translationFailed,
-      String? targetLanguage,
       double top,
       double bottom) {
     final saved = state.isSaved(article.id);
@@ -206,14 +218,6 @@ class _ArticleScreenState extends State<ArticleScreen> {
         .map((paragraph) => paragraph.trim())
         .where((paragraph) => paragraph.isNotEmpty)
         .toList();
-    final webpage = article.sources
-        .map((source) => Uri.tryParse(source.url))
-        .whereType<Uri>()
-        .where((url) =>
-            url.scheme == 'https' &&
-            url.host.isNotEmpty &&
-            url.userInfo.isEmpty)
-        .firstOrNull;
     final synopsis = _synopsis(
         translation == null ? article.summary : [translation.synopsis],
         paragraphs);
@@ -286,7 +290,7 @@ class _ArticleScreenState extends State<ArticleScreen> {
                 Semantics(
                     header: true,
                     child: Text(translation?.title ?? article.title,
-                        style: RText.title1)),
+                        style: RText.largeTitle)),
                 const SizedBox(height: 12),
                 if (publisher != null)
                   _MetaLine(
@@ -349,8 +353,14 @@ class _ArticleScreenState extends State<ArticleScreen> {
                     icon: _showFullArticle
                         ? Icons.expand_less
                         : Icons.expand_more,
-                    onPressed: () =>
-                        setState(() => _showFullArticle = !_showFullArticle),
+                    onPressed: () {
+                      setState(() => _showFullArticle = !_showFullArticle);
+                      if (_showFullArticle) {
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                          if (mounted && _scroll.hasClients) _onScroll();
+                        });
+                      }
+                    },
                   ),
                 ],
                 if (_showFullArticle && paragraphs.isNotEmpty) ...[
@@ -364,39 +374,20 @@ class _ArticleScreenState extends State<ArticleScreen> {
                   for (final paragraph in paragraphs)
                     Padding(
                       padding: const EdgeInsets.only(bottom: 14),
-                      child: Text(paragraph,
-                          style: RText.body.withColor(RColors.textSecondary)),
+                      child: SelectableText(paragraph,
+                          style: RText.body.copyWith(height: 1.65)),
                     ),
+                  SizedBox(key: _readingEnd),
                 ],
-                if (paragraphs.isEmpty && webpage != null) ...[
-                  const SizedBox(height: 16),
-                  RButton(
-                    'Ler matéria completa',
-                    icon: Icons.article_outlined,
-                    onPressed: () {
-                      final embedded = !kIsWeb &&
-                          (defaultTargetPlatform == TargetPlatform.iOS ||
-                              defaultTargetPlatform == TargetPlatform.android);
-                      if (!embedded) {
-                        _openReadingLink(webpage);
-                        return;
-                      }
-                      Navigator.of(context).push(MaterialPageRoute<void>(
-                        builder: (_) => PublisherReaderScreen(
-                          article: article,
-                          sourceUrl: webpage,
-                          targetLanguage: targetLanguage,
-                        ),
-                      ));
-                    },
-                  ),
-                ] else if (paragraphs.isEmpty) ...[
+                if (paragraphs.isEmpty) ...[
                   const SizedBox(height: 12),
-                  Text(context.tr('A fonte disponibilizou apenas um trecho.'),
+                  Text(
+                      context.tr(_fetching
+                          ? 'Carregando o texto…'
+                          : 'O texto completo não está disponível no app.'),
                       style: RText.footnote.withColor(RColors.textSecondary)),
                 ],
-                if (article.sources.isNotEmpty &&
-                    (_showFullArticle || paragraphs.isEmpty)) ...[
+                if (article.sources.isNotEmpty) ...[
                   const SizedBox(height: 16),
                   Text(context.tr('Fontes'), style: RText.headline),
                   const SizedBox(height: 10),
@@ -419,6 +410,9 @@ class _ArticleScreenState extends State<ArticleScreen> {
                     ],
                   ),
                 ],
+                const SizedBox(height: 12),
+                ArticleComments(
+                    key: ValueKey(article.id), articleId: article.id),
                 SizedBox(height: 32 + bottom),
               ],
             ),
@@ -453,10 +447,13 @@ class _HeroImage extends StatelessWidget {
       child: ClipRRect(
         borderRadius: BorderRadius.circular(RRadius.hero),
         child: SizedBox(
-          height: 190,
+          height: 220,
           width: double.infinity,
           child: article.imageUrl != null
-              ? Image.network(article.imageUrl!, fit: BoxFit.cover)
+              ? Image.network(article.imageUrl!,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) =>
+                      Center(child: Icon(c.icon, size: 64, color: c.color)))
               : DecoratedBox(
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
@@ -516,7 +513,13 @@ class _SynopsisCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return RCard(
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: RColors.bgCard,
+        borderRadius: BorderRadius.circular(RRadius.card),
+        border: Border.all(color: RColors.tint(RColors.radar, 0.28)),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

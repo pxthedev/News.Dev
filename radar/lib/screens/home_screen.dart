@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import '../l10n/app_copy.dart';
 import 'dart:async';
 
@@ -215,6 +217,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 sliver: SliverToBoxAdapter(
                   child: _Header(
                     initials: state.initials,
+                    avatar: state.userAvatar,
                     segment: _segment,
                     onSegment: _setSegment,
                     unread: state.unreadAlerts,
@@ -390,10 +393,12 @@ class _HomeScreenState extends State<HomeScreen> {
 class _Header extends StatelessWidget {
   const _Header(
       {required this.initials,
+      this.avatar,
       required this.segment,
       required this.onSegment,
       required this.unread});
   final String initials;
+  final Uint8List? avatar;
   final int segment;
   final ValueChanged<int> onSegment;
   final int unread;
@@ -403,7 +408,8 @@ class _Header extends StatelessWidget {
     return Row(
       children: [
         Semantics(
-            label: 'Seu perfil', child: InitialsAvatar(initials, size: 36)),
+            label: 'Seu perfil',
+            child: InitialsAvatar(initials, size: 36, photo: avatar)),
         Expanded(
           child: Center(
             child: FittedBox(
@@ -441,7 +447,12 @@ class HeroCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-            color: RColors.radar,
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [RColors.radar, Color(0xFFA4DE35)],
+            ),
+            border: Border.all(color: Colors.white24),
             borderRadius: BorderRadius.circular(RRadius.hero)),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,

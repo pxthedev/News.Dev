@@ -6,6 +6,12 @@ import jakarta.validation.constraints.*;
 import java.util.List;
 
 public final class UserModels {
+  public record ProfileUpdate(
+      @NotBlank @Size(max = 80) String name,
+      @NotNull @Size(max = 160) String bio,
+      @Size(max = 349528) String avatarBase64,
+      boolean removeAvatar) {}
+
   public record QuietHours(
       @NotNull @Pattern(regexp = "([01][0-9]|2[0-3]):[0-5][0-9]") String from,
       @NotNull @Pattern(regexp = "([01][0-9]|2[0-3]):[0-5][0-9]") String to) {}

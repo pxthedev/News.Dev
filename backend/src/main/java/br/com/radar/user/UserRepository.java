@@ -7,8 +7,12 @@ import br.com.radar.auth.IdentityRepository;
 import br.com.radar.common.*;
 import br.com.radar.common.PostgresStore.*;
 import br.com.radar.content.*;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.time.*;
 import java.util.*;
+import javax.imageio.ImageIO;
+import javax.imageio.stream.MemoryCacheImageInputStream;
 import org.springframework.stereotype.Repository;
 
 @Repository
@@ -34,12 +38,66 @@ public class UserRepository {
         u.getId(),
         "name",
         u.getString("name"),
+        "bio",
+        u.getString("bio"),
+        "avatarBase64",
+        u.getString("avatarBase64"),
         "createdAt",
         u.getString("createdAt"),
         "email",
         u.getString("email"),
         "anonymous",
         u.getString("email") == null);
+  }
+
+  public Map<String, Object> updateProfile(String user, ProfileUpdate profile) {
+    if (identities.user(user).getString("email") == null) throw ApiException.unauthorized();
+    String name = profile.name().strip();
+    if (name.isEmpty() || name.codePoints().anyMatch(Character::isISOControl)) {
+      throw ApiException.invalid("Informe um nome válido.");
+    }
+
+    var changes = map("name", name, "bio", profile.bio().strip());
+    if (profile.avatarBase64() != null) {
+      if (profile.removeAvatar())
+        throw ApiException.invalid("Escolha uma única alteração de foto.");
+      changes.put("avatarBase64", validatedAvatar(profile.avatarBase64()));
+    } else if (profile.removeAvatar()) {
+      changes.put("avatarBase64", FieldValue.delete());
+    }
+    await(identities.userRef(user).update(changes));
+    return profile(user);
+  }
+
+  static String validatedAvatar(String image) {
+    try {
+      byte[] bytes = Base64.getDecoder().decode(image);
+      if (bytes.length == 0 || bytes.length > 256 * 1024) throw invalidAvatar();
+      try (var input = new MemoryCacheImageInputStream(new ByteArrayInputStream(bytes))) {
+        var readers = ImageIO.getImageReaders(input);
+        if (!readers.hasNext()) throw invalidAvatar();
+        var reader = readers.next();
+        try {
+          if (!Set.of("jpeg", "png").contains(reader.getFormatName().toLowerCase(Locale.ROOT))) {
+            throw invalidAvatar();
+          }
+          reader.setInput(input, true, true);
+          int width = reader.getWidth(0);
+          int height = reader.getHeight(0);
+          if (width < 1 || height < 1 || width > 1024 || height > 1024 || reader.read(0) == null)
+            throw invalidAvatar();
+        } finally {
+          reader.dispose();
+        }
+      }
+      return Base64.getEncoder().encodeToString(bytes);
+    } catch (IllegalArgumentException | IOException e) {
+      throw invalidAvatar();
+    }
+  }
+
+  private static ApiException invalidAvatar() {
+    return ApiException.invalid("Escolha uma imagem JPG ou PNG de até 256 KB.");
   }
 
   public Prefs prefs(String user) {

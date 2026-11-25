@@ -109,6 +109,42 @@ const _translations = <String, (String, String)>{
     'The publisher supplied an excerpt.',
     'El medio proporcionó un fragmento.',
   ),
+  'O texto completo não está disponível no app.': (
+    'The full text is unavailable in the app.',
+    'El texto completo no está disponible en la app.'
+  ),
+  'Carregando o texto…': ('Loading the article…', 'Cargando el artículo…'),
+  'Comentários': ('Comments', 'Comentarios'),
+  'O que você achou da notícia?': (
+    'What did you think of the story?',
+    '¿Qué te pareció la noticia?'
+  ),
+  'Entre com uma conta para comentar.': (
+    'Sign in to comment.',
+    'Inicia sesión para comentar.'
+  ),
+  'Publicar comentário': ('Post comment', 'Publicar comentario'),
+  'Ainda não há comentários.': (
+    'No comments yet.',
+    'Todavía no hay comentarios.'
+  ),
+  'Ver mais comentários': ('Load more comments', 'Ver más comentarios'),
+  'Leitor': ('Reader', 'Lector'),
+  'Excluir': ('Delete', 'Eliminar'),
+  'Excluir comentário': ('Delete comment', 'Eliminar comentario'),
+  'Excluir comentário?': ('Delete this comment?', '¿Eliminar este comentario?'),
+  'Não foi possível carregar os comentários.': (
+    'Could not load comments.',
+    'No se pudieron cargar los comentarios.'
+  ),
+  'Não foi possível publicar o comentário.': (
+    'Could not post your comment.',
+    'No se pudo publicar el comentario.'
+  ),
+  'Não foi possível excluir o comentário.': (
+    'Could not delete the comment.',
+    'No se pudo eliminar el comentario.'
+  ),
   'Traduzindo…': ('Translating…', 'Traduciendo…'),
   'Tradução indisponível. Exibindo o original.': (
     'Translation unavailable. Showing the original.',
@@ -440,5 +476,27 @@ const _translations = <String, (String, String)>{
   'Startups, governo e empresas brasileiras.': (
     'Brazilian startups, government, and companies.',
     'Startups, gobierno y empresas brasileñas.'
+  ),
+  'Editar perfil': ('Edit profile', 'Editar perfil'),
+  'Adicionar foto': ('Add photo', 'Añadir foto'),
+  'Trocar foto': ('Change photo', 'Cambiar foto'),
+  'Remover foto': ('Remove photo', 'Eliminar foto'),
+  'Sobre você': ('About you', 'Sobre ti'),
+  'Perfil atualizado.': ('Profile updated.', 'Perfil actualizado.'),
+  'Informe um nome válido.': (
+    'Enter a valid name.',
+    'Introduce un nombre válido.'
+  ),
+  'Não foi possível abrir a galeria.': (
+    'Could not open your photos.',
+    'No se pudo abrir la galería.'
+  ),
+  'Não foi possível salvar o perfil.': (
+    'Could not save the profile.',
+    'No se pudo guardar el perfil.'
+  ),
+  'Escolha uma imagem JPG ou PNG de até 256 KB.': (
+    'Choose a JPG or PNG image up to 256 KB.',
+    'Elige una imagen JPG o PNG de hasta 256 KB.',
   ),
 };

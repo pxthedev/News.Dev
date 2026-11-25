@@ -543,16 +543,29 @@ class InitialsAvatar extends StatelessWidget {
       {super.key,
       this.size = 36,
       this.color = RColors.radar,
-      this.borderColor});
+      this.borderColor,
+      this.photo});
 
   final String initials;
   final double size;
   final Color color;
   final Color? borderColor;
+  final Uint8List? photo;
 
   @override
   Widget build(BuildContext context) {
     final textColor = color == RColors.radar ? RColors.onRadar : Colors.white;
+    final image = photo;
+    if (image != null) {
+      return ClipOval(
+        child: Image.memory(image,
+            width: size,
+            height: size,
+            fit: BoxFit.cover,
+            errorBuilder: (_, __, ___) => InitialsAvatar(initials,
+                size: size, color: color, borderColor: borderColor)),
+      );
+    }
     return Container(
       width: size,
       height: size,

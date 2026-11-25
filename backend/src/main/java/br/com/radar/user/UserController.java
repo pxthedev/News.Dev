@@ -24,6 +24,12 @@ public class UserController {
     return users.profile(jwt.getSubject());
   }
 
+  @PutMapping("/me")
+  Map<String, Object> updateProfile(
+      @AuthenticationPrincipal Jwt jwt, @Valid @RequestBody ProfileUpdate profile) {
+    return users.updateProfile(jwt.getSubject(), profile);
+  }
+
   @GetMapping("/me/prefs")
   Prefs prefs(@AuthenticationPrincipal Jwt jwt) {
     return users.prefs(jwt.getSubject());

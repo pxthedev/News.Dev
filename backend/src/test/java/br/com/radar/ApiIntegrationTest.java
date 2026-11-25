@@ -81,6 +81,116 @@ class ApiIntegrationTest {
     other = anonymous().get("token").asText();
   }
 
+  @Test
+  void articleCommentsAreVisibleToReadersAndOnlyTheAuthorCanDelete() throws Exception {
+    String articleId = "comments-" + UUID.randomUUID();
+    publish(article(articleId, true, "normal", 60));
+    String path = "/v1/articles/" + articleId + "/comments";
+    String account =
+        postJson(
+                "/v1/auth/register",
+                Map.of(
+                    "name",
+                    "Leitora",
+                    "email",
+                    UUID.randomUUID() + "@radar.test",
+                    "password",
+                    "Comments-test-password"),
+                201)
+            .get("token")
+            .asText();
+    var body = json.writeValueAsBytes(Map.of("body", " Boa análise! "));
+    mvc.perform(
+            post(path)
+                .header("Authorization", "Bearer " + user)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(body))
+        .andExpect(status().isForbidden());
+    var result =
+        mvc.perform(
+                post(path)
+                    .header("Authorization", "Bearer " + account)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(body))
+            .andExpect(status().isCreated())
+            .andExpect(jsonPath("$.body").value("Boa análise!"))
+            .andExpect(jsonPath("$.mine").value(true))
+            .andReturn()
+            .getResponse();
+    String commentId = json.readTree(result.getContentAsString()).get("id").asText();
+    mvc.perform(get(path).header("Authorization", "Bearer " + other))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.items[0].author").value("Leitora"))
+        .andExpect(jsonPath("$.items[0].mine").value(false))
+        .andExpect(jsonPath("$.items[0].authorId").doesNotExist());
+    mvc.perform(delete(path + "/" + commentId).header("Authorization", "Bearer " + other))
+        .andExpect(status().isNotFound());
+    mvc.perform(delete(path + "/" + commentId).header("Authorization", "Bearer " + account))
+        .andExpect(status().isNoContent());
+    mvc.perform(get(path).header("Authorization", "Bearer " + other))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.items").isEmpty());
+  }
+
+  @Test
+  void accountCanUpdateItsOwnProfileAndRemoveItsPhoto() throws Exception {
+    String account =
+        postJson(
+                "/v1/auth/register",
+                Map.of(
+                    "name",
+                    "Antes",
+                    "email",
+                    UUID.randomUUID() + "@radar.test",
+                    "password",
+                    "Profile-test-password"),
+                201)
+            .get("token")
+            .asText();
+    var bytes = new java.io.ByteArrayOutputStream();
+    javax.imageio.ImageIO.write(
+        new java.awt.image.BufferedImage(2, 2, java.awt.image.BufferedImage.TYPE_INT_RGB),
+        "png",
+        bytes);
+    String photo = Base64.getEncoder().encodeToString(bytes.toByteArray());
+    mvc.perform(
+            put("/v1/me")
+                .header("Authorization", "Bearer " + account)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    json.writeValueAsBytes(
+                        Map.of("name", " Novo nome ", "bio", "Minha bio", "avatarBase64", photo))))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.name").value("Novo nome"))
+        .andExpect(jsonPath("$.bio").value("Minha bio"))
+        .andExpect(jsonPath("$.avatarBase64").value(photo));
+    mvc.perform(get("/v1/me").header("Authorization", "Bearer " + other))
+        .andExpect(jsonPath("$.avatarBase64").doesNotExist());
+    mvc.perform(
+            put("/v1/me")
+                .header("Authorization", "Bearer " + account)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    json.writeValueAsBytes(
+                        Map.of("name", "Novo nome", "bio", "", "avatarBase64", "aW52YWxpZA=="))))
+        .andExpect(status().isBadRequest());
+    mvc.perform(
+            put("/v1/me")
+                .header("Authorization", "Bearer " + account)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    json.writeValueAsBytes(
+                        Map.of("name", "Novo nome", "bio", "", "removeAvatar", true))))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.avatarBase64").doesNotExist());
+    mvc.perform(
+            put("/v1/me")
+                .header("Authorization", "Bearer " + other)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"name\":\"Teste\",\"bio\":\"\"}"))
+        .andExpect(status().isUnauthorized());
+  }
+
   JsonNode anonymous() throws Exception {
     return postJson("/v1/auth/anonymous", Map.of("platform", "android"), 200);
   }
@@ -714,6 +824,9 @@ class ApiIntegrationTest {
     var description = new com.rometools.rome.feed.synd.SyndContentImpl();
     description.setValue("Resumo da fonte");
     entry.setDescription(description);
+    var content = new com.rometools.rome.feed.synd.SyndContentImpl();
+    content.setValue("<p>Primeiro parágrafo &amp; detalhes.</p><p>Segundo parágrafo.</p>");
+    entry.setContents(List.of(content));
     org.mockito.Mockito.when(rssFetcher.fetch("https://example.org/feed.xml"))
         .thenReturn(List.of(entry));
     mvc.perform(
@@ -741,7 +854,32 @@ class ApiIntegrationTest {
         .andExpect(jsonPath("$.items.length()").value(0));
     mvc.perform(get("/v1/feed?rumors=true").header("Authorization", "Bearer " + user))
         .andExpect(jsonPath("$.items[0].confirmed").value(false))
+        .andExpect(jsonPath("$.items[0].body").value(""))
         .andExpect(jsonPath("$.items[0].sources[0].url").value("https://example.org/news?id=1"));
+    mvc.perform(
+            put("/v1/admin/sources/test-feed")
+                .header("Authorization", "Bearer " + admin)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    json.writeValueAsBytes(
+                        Map.of(
+                            "name",
+                            "Fonte de teste",
+                            "url",
+                            "https://example.org/feed.xml",
+                            "category",
+                            "programacao",
+                            "allowFullText",
+                            true))))
+        .andExpect(status().isNoContent());
+    mvc.perform(
+            post("/v1/admin/sources/test-feed/collect").header("Authorization", "Bearer " + admin))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.imported").value(0));
+    mvc.perform(get("/v1/feed?rumors=true").header("Authorization", "Bearer " + user))
+        .andExpect(
+            jsonPath("$.items[0].body")
+                .value("Primeiro parágrafo & detalhes.\n\nSegundo parágrafo."));
   }
 
   @Test

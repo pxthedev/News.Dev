@@ -138,17 +138,19 @@ public class IngestionService {
         String key = hash(canonical);
         String id = "rss-" + key.substring(0, 32);
         var imported = store.doc("imports", key);
-        if (store.get(imported).exists()) continue;
-        Instant detected = now;
         String fullText =
-            Boolean.TRUE.equals(source.getBoolean("allowFullText"))
-                ? entry.getContents().stream()
-                    .map(content -> RssFetcher.articleText(content.getValue()))
-                    .filter(value -> !value.isBlank())
-                    .findFirst()
-                    .orElse("")
-                : "";
-        if (fullText.length() > 100_000) fullText = "";
+            Boolean.TRUE.equals(source.getBoolean("allowFullText")) ? fullText(entry, excerpt) : "";
+        int readingMinutes =
+            fullText.isBlank()
+                ? 1
+                : Math.max(1, Math.min(120, (fullText.split("\\s+").length + 199) / 200));
+        var previous = store.get(imported);
+        if (previous.exists()) {
+          if (!fullText.isBlank() && sourceId.equals(previous.getString("sourceId"))) {
+            articles.fillImportedBody(id, fullText, readingMinutes);
+          }
+          continue;
+        }
 
         String summary =
             excerpt.isBlank()
@@ -170,7 +172,7 @@ public class IngestionService {
                 category,
                 feed == null ? "Aguardando revisão" : source.getString("name"),
                 null,
-                detected,
+                now,
                 published,
                 List.of(new Source(source.getString("name"), canonical, null, null)),
                 1,
@@ -178,7 +180,7 @@ public class IngestionService {
                 null,
                 "normal",
                 feed != null,
-                feed == null ? Math.max(1, (excerpt.split(" ").length + 199) / 200) : 1,
+                readingMinutes,
                 null,
                 null,
                 List.of(),
@@ -215,6 +217,15 @@ public class IngestionService {
       await(ref.update("leaseUntil", time(Instant.EPOCH)));
     }
     return Map.of("imported", inserted);
+  }
+
+  private static String fullText(SyndEntry entry, String excerpt) {
+    return entry.getContents().stream()
+        .map(content -> RssFetcher.articleText(content.getValue()))
+        .filter(value -> !value.isBlank() && value.length() <= 100_000)
+        .filter(value -> !RssFetcher.text(value).equals(excerpt))
+        .findFirst()
+        .orElse("");
   }
 
   public static String canonical(URI uri) {

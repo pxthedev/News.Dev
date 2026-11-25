@@ -1,5 +1,4 @@
 import 'dart:async';
-
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
@@ -51,6 +50,9 @@ class AppState extends ChangeNotifier {
 
   // Usuário
   String userName = 'Leitor';
+  String userBio = '';
+  Uint8List? userAvatar;
+  int _profileRevision = 0;
   String? userEmail;
   bool get isAccount =>
       repo is HttpRepository && (repo as HttpRepository).api.store.isAccount;
@@ -112,6 +114,32 @@ class AppState extends ChangeNotifier {
   int _toastSeq = 0;
   bool _disposed = false;
 
+  void _applyProfile(UserProfile profile) {
+    userName = profile.name;
+    userEmail = profile.email;
+    memberSince = profile.createdAt;
+    userBio = profile.bio;
+    userAvatar = profile.avatar;
+  }
+
+  Future<void> updateProfile(
+      {required String name,
+      required String bio,
+      Uint8List? avatar,
+      bool removeAvatar = false}) async {
+    final repository = repo;
+    if (repository is! HttpRepository || !isAccount) {
+      throw const RepoException('Entre na conta para editar o perfil.');
+    }
+    final revision = ++_profileRevision;
+    final result = await repository.updateProfile(
+        name: name, bio: bio, avatar: avatar, removeAvatar: removeAvatar);
+    if (_disposed || revision != _profileRevision) return;
+    _applyProfile(result);
+    _schedulePersist();
+    notifyListeners();
+  }
+
   int get unreadAlerts => alerts.where((a) => a.unread).length;
 
   UserPrefs get prefs => UserPrefs(
@@ -143,10 +171,9 @@ class AppState extends ChangeNotifier {
   Future<void> refreshRemote() async {
     await Future.wait([
       _try(() async {
+        final revision = _profileRevision;
         final me = await repo.me();
-        userName = me.name;
-        userEmail = me.email;
-        memberSince = me.createdAt;
+        if (revision == _profileRevision) _applyProfile(me);
       }),
       _try(() async => week = await repo.weeklyStats()),
       _try(() async {
@@ -179,8 +206,11 @@ class AppState extends ChangeNotifier {
     _prefsTimer?.cancel();
     _persistTimer?.cancel();
     onboarded = false;
+    _profileRevision++;
     userName = 'Leitor';
     userEmail = null;
+    userBio = '';
+    userAvatar = null;
     memberSince = null;
     week = const WeeklyStats(
         scoops: 0,
@@ -277,6 +307,7 @@ class AppState extends ChangeNotifier {
   Json _toJson() => {
         'onboarded': onboarded,
         'userName': userName,
+        'userBio': userBio,
         'memberSince': memberSince?.toUtc().toIso8601String(),
         'week': week.toJson(),
         'prefs': prefs.toJson(),
@@ -295,6 +326,7 @@ class AppState extends ChangeNotifier {
   void _fromJson(Json j) {
     onboarded = j.boolean('onboarded');
     userName = j.strOrNull('userName') ?? userName;
+    userBio = j.strOrNull('userBio') ?? '';
     memberSince = j['memberSince'] == null ? null : j.date('memberSince');
     if (j['week'] is Map) week = WeeklyStats.fromJson(j.obj('week'));
     if (j['prefs'] is Map) {

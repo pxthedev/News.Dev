@@ -5,6 +5,7 @@ import static br.com.radar.content.ContentModels.*;
 
 import br.com.radar.common.*;
 import br.com.radar.common.PostgresStore.*;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.nio.charset.StandardCharsets;
 import java.text.Normalizer;
 import java.time.*;
@@ -29,6 +30,20 @@ public class ContentRepository {
     var doc = store.get(store.doc("articles", id));
     require(doc);
     return decode(doc);
+  }
+
+  public void fillImportedBody(String id, String body, int readingMinutes) {
+    var ref = store.doc("articles", id);
+    store.transaction(
+        tx -> {
+          var doc = await(tx.get(ref));
+          if (!doc.exists() || !decode(doc).body().isBlank()) return null;
+          var payload = json.read(doc.getString("payload"), ObjectNode.class);
+          payload.put("body", body);
+          payload.put("readingMinutes", readingMinutes);
+          tx.update(ref, "payload", json.write(payload));
+          return null;
+        });
   }
 
   public List<Article> byIds(List<String> ids) {

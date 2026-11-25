@@ -214,6 +214,18 @@ create index if not exists days_owner_day on fionova.user_reading_days (owner_id
 create index if not exists alerts_owner_time on fionova.user_alerts (owner_id, (data->>'at') desc);
 create index if not exists users_email on fionova.users ((data->>'email'));
 
+create table if not exists fionova.article_comments (
+  id bigint generated always as identity primary key,
+  article_id text not null,
+  author_id text not null,
+  body text not null check (char_length(body) between 1 and 1000),
+  created_at timestamptz not null default now()
+);
+create index if not exists article_comments_article_id
+  on fionova.article_comments (article_id, id desc);
+alter table fionova.article_comments enable row level security;
+revoke all on fionova.article_comments from public;
+
 -- Supabase roles are absent in ordinary PostgreSQL used by integration tests.
 do $$
 begin

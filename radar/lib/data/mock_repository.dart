@@ -19,6 +19,31 @@ class MockRepository extends RadarRepository {
   final DateTime _startedAt = DateTime.now();
   final List<Article> _arrived = [];
   final _alerts = buildMockAlerts();
+  final _comments = <String, List<ArticleComment>>{};
+  int _commentSequence = 0;
+
+  @override
+  Future<ArticleCommentsPage> articleComments(String id,
+          {String? before}) async =>
+      (
+        items: List<ArticleComment>.of(_comments[id] ?? const []),
+        nextCursor: null
+      );
+
+  @override
+  Future<ArticleComment> postArticleComment(String id, String body) async {
+    final profile = await me();
+    final comment = ArticleComment(
+        '${++_commentSequence}', profile.name, body, DateTime.now(), true);
+    (_comments[id] ??= []).insert(0, comment);
+    return comment;
+  }
+
+  @override
+  Future<void> deleteArticleComment(String id, String commentId) async {
+    _comments[id]?.removeWhere((comment) => comment.id == commentId);
+  }
+
   final Map<String, SavedEntry> _saved = {
     for (final (i, id) in mockSavedIds.indexed)
       id: SavedEntry(
@@ -142,7 +167,8 @@ class MockRepository extends RadarRepository {
     await _wait(250);
     _checkOnline();
     final items = _visible(showRumors: showRumors).where((a) {
-      if (a.category != c && !(c == NewsCategory.ia && a.title.contains('IA'))) {
+      if (a.category != c &&
+          !(c == NewsCategory.ia && a.title.contains('IA'))) {
         return false;
       }
       if (company == null) return true;

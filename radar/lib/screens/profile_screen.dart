@@ -11,6 +11,7 @@ import '../widgets/primitives.dart';
 import '../widgets/system.dart';
 import '../widgets/sign_out_button.dart';
 import 'onboarding/welcome_screen.dart';
+import 'edit_profile_screen.dart';
 
 /// 12 · Perfil e ajustes
 class ProfileScreen extends StatelessWidget {
@@ -55,7 +56,7 @@ class ProfileScreen extends StatelessWidget {
       children: [
         Row(
           children: [
-            InitialsAvatar(state.initials, size: 60),
+            InitialsAvatar(state.initials, size: 60, photo: state.userAvatar),
             const SizedBox(width: 14),
             Expanded(
               child: Column(
@@ -65,7 +66,12 @@ class ProfileScreen extends StatelessWidget {
                       header: true,
                       child: Text(state.userName, style: RText.title3)),
                   const SizedBox(height: 2),
-                  Text(context.tr('Leitor desde {date}', {'date': MaterialLocalizations.of(context).formatMonthYear(state.memberSince ?? DateTime.now())}),
+                  Text(
+                      context.tr('Leitor desde {date}', {
+                        'date': MaterialLocalizations.of(context)
+                            .formatMonthYear(
+                                state.memberSince ?? DateTime.now())
+                      }),
                       style: RText.footnote.withColor(RColors.textSecondary)),
                 ],
               ),
@@ -76,6 +82,23 @@ class ProfileScreen extends StatelessWidget {
                 onTap: () => _more(context, state)),
           ],
         ),
+        if (state.userBio.isNotEmpty) ...[
+          const SizedBox(height: 12),
+          Text(state.userBio,
+              style: RText.body.withColor(RColors.textSecondary)),
+        ],
+        if (state.isAccount) ...[
+          const SizedBox(height: 12),
+          RButton(
+            'Editar perfil',
+            icon: Icons.edit_outlined,
+            kind: RButtonKind.secondary,
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                  builder: (_) => const EditProfileScreen()),
+            ),
+          ),
+        ],
         const SizedBox(height: 18),
         _WeekCard(state: state),
         const SizedBox(height: 24),

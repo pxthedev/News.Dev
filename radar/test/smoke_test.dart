@@ -1,5 +1,5 @@
-import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:radar/app.dart';
 import 'package:radar/data/mock_repository.dart';
 import 'package:radar/data/models.dart';
@@ -7,6 +7,7 @@ import 'package:radar/data/repository.dart';
 import 'package:radar/routes.dart';
 import 'package:radar/l10n/app_copy.dart';
 import 'package:radar/state/app_state.dart';
+import 'package:radar/widgets/article_comments.dart';
 
 /// Abre o app já depois do onboarding e passa pelas telas que carregam dados do repositório.
 void main() {
@@ -95,12 +96,43 @@ void main() {
 
     unawaited(Routes.openArticle('rss-preview'));
     await tester.pumpAndSettle();
-    expect(find.text('Ler matéria completa'), findsOneWidget);
+    expect(find.text('Ler matéria completa'), findsNothing);
+    expect(find.text('O texto completo não está disponível no app.'),
+        findsOneWidget);
     expect(find.text('Fontes'), findsOneWidget);
 
     // Desmonta pra cancelar timers (polling de notícias novas, toasts).
     await tester.pumpWidget(const SizedBox());
     await tester.pump(const Duration(seconds: 10));
+    state.dispose();
+  });
+
+  testWidgets('leitor publica comentário no formulário da matéria',
+      (tester) async {
+    final repo = MockRepository(latency: false);
+    final state = _AuthenticatedState(repo);
+    await tester.pumpWidget(AppScope(
+      state: state,
+      child: const MaterialApp(
+        locale: Locale('pt', 'BR'),
+        supportedLocales: [Locale('pt', 'BR')],
+        localizationsDelegates: GlobalMaterialLocalizations.delegates,
+        home: Scaffold(
+          body: SingleChildScrollView(
+            child: ArticleComments(articleId: 'nvidia-fabrica'),
+          ),
+        ),
+      ),
+    ));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), 'Boa análise!');
+    await tester.pump();
+    await tester.tap(find.text('Publicar comentário'));
+    await tester.pumpAndSettle();
+    expect(find.text('Boa análise!'), findsOneWidget);
+    final page = await repo.articleComments('nvidia-fabrica');
+    expect(page.items.single.body, 'Boa análise!');
+    await tester.pumpWidget(const SizedBox());
     state.dispose();
   });
 }

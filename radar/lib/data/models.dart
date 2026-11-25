@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'dart:math' as math;
+import 'dart:typed_data';
 
 import 'package:material_ui/material_ui.dart';
 
@@ -244,6 +246,30 @@ class Entity {
       Entity(j.str('type'), j.str('id'), j.str('name'));
   Json toJson() => {'type': type, 'id': id, 'name': name};
 }
+
+class ArticleComment {
+  const ArticleComment(
+      this.id, this.author, this.body, this.createdAt, this.mine);
+
+  final String id;
+  final String author;
+  final String body;
+  final DateTime createdAt;
+  final bool mine;
+
+  factory ArticleComment.fromJson(Json json) => ArticleComment(
+        json.str('id'),
+        json.strOrNull('author') ?? '',
+        json.str('body'),
+        json.date('createdAt'),
+        json.boolean('mine'),
+      );
+}
+
+typedef ArticleCommentsPage = ({
+  List<ArticleComment> items,
+  String? nextCursor
+});
 
 class ArticleTranslation {
   const ArticleTranslation(this.title, this.synopsis, this.body);
@@ -712,21 +738,32 @@ class SearchResult {
 
 /// GET /me
 class UserProfile {
-  const UserProfile(
-      {required this.id,
-      required this.name,
-      required this.createdAt,
-      this.email});
+  const UserProfile({
+    required this.id,
+    required this.name,
+    required this.createdAt,
+    this.email,
+    this.bio = '',
+    this.avatar,
+  });
   final String id;
   final String name;
   final DateTime createdAt;
   final String? email;
+  final String bio;
+  final Uint8List? avatar;
 
-  factory UserProfile.fromJson(Json j) => UserProfile(
+  factory UserProfile.fromJson(Json j) {
+    final raw = j.strOrNull('avatarBase64');
+    return UserProfile(
       id: j.str('id'),
       name: j.str('name'),
       createdAt: j.date('createdAt'),
-      email: j.strOrNull('email'));
+      email: j.strOrNull('email'),
+      bio: j.strOrNull('bio') ?? '',
+      avatar: raw == null ? null : base64Decode(raw),
+    );
+  }
 }
 
 /// Item salvo. O progresso de leitura vai de 0 a 1.

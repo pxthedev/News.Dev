@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'dart:convert';
+import 'dart:typed_data';
 
 import '../json.dart';
 import '../local_store.dart';
@@ -124,19 +126,46 @@ class HttpRepository extends RadarRepository {
   @override
   Future<Article?> article(String id) async {
     final cached = byId(id);
-    if (cached != null) return cached;
+    if (cached != null && cached.body.trim().isNotEmpty) return cached;
     try {
       return remember<Article>(
           Article.fromJson(await _get('/v1/articles/$id')));
     } on RepoException catch (e) {
       if (e.statusCode == 404) return null;
       if (e.offline) {
+        if (cached != null) return cached;
         for (final a in [...store.savedArticles(), ...store.cachedFeed()]) {
           if (a.id == id) return remember<Article>(a);
         }
       }
       rethrow;
     }
+  }
+
+  @override
+  Future<ArticleCommentsPage> articleComments(String id,
+      {String? before}) async {
+    final result = await _get(
+        '/v1/articles/${Uri.encodeComponent(id)}/comments', {'before': before});
+    return (
+      items: result.objects('items').map(ArticleComment.fromJson).toList(),
+      nextCursor: result['nextCursor'] as String?,
+    );
+  }
+
+  @override
+  Future<ArticleComment> postArticleComment(String id, String body) async {
+    _checkOnline();
+    return ArticleComment.fromJson(await api.post(
+        '/v1/articles/${Uri.encodeComponent(id)}/comments',
+        body: {'body': body}) as Json);
+  }
+
+  @override
+  Future<void> deleteArticleComment(String id, String commentId) async {
+    _checkOnline();
+    await api.delete(
+        '/v1/articles/${Uri.encodeComponent(id)}/comments/${Uri.encodeComponent(commentId)}');
   }
 
   @override
@@ -197,6 +226,20 @@ class HttpRepository extends RadarRepository {
   }
 
   // ---- Usuário
+
+  Future<UserProfile> updateProfile(
+      {required String name,
+      required String bio,
+      Uint8List? avatar,
+      bool removeAvatar = false}) async {
+    _checkOnline();
+    return UserProfile.fromJson(await api.put('/v1/me', body: {
+      'name': name,
+      'bio': bio,
+      if (avatar != null) 'avatarBase64': base64Encode(avatar),
+      if (removeAvatar) 'removeAvatar': true,
+    }) as Json);
+  }
 
   @override
   Future<UserProfile> me() async => UserProfile.fromJson(await _get('/v1/me'));

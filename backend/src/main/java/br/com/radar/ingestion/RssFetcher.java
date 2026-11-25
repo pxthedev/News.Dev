@@ -12,6 +12,7 @@ import java.util.zip.GZIPInputStream;
 import org.jdom2.input.SAXBuilder;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import org.springframework.web.util.HtmlUtils;
 
 @Component
 public class RssFetcher {
@@ -106,14 +107,10 @@ public class RssFetcher {
   public static String text(String html) {
     return html == null
         ? ""
-        : html.replaceAll("(?is)<(script|style)[^>]*>.*?</\\1>", "")
-            .replaceAll("(?s)<[^>]+>", " ")
-            .replace("&amp;", "&")
-            .replace("&lt;", "<")
-            .replace("&gt;", ">")
-            .replace("&quot;", "\"")
-            .replace("&#39;", "'")
-            .replace("&nbsp;", " ")
+        : HtmlUtils.htmlUnescape(
+                html.replaceAll("(?is)<(script|style)[^>]*>.*?</\\1>", "")
+                    .replaceAll("(?s)<[^>]+>", " "))
+            .replace('\u00a0', ' ')
             .replaceAll("\\s+", " ")
             .trim();
   }
