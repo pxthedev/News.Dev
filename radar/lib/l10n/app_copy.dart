@@ -114,6 +114,14 @@ const _translations = <String, (String, String)>{
     'El texto completo no está disponible en la app.'
   ),
   'Carregando o texto…': ('Loading the article…', 'Cargando el artículo…'),
+  'Texto adaptado e traduzido.': (
+    'Text adapted and translated.',
+    'Texto adaptado y traducido.'
+  ),
+  'Texto adaptado para leitura.': (
+    'Text adapted for reading.',
+    'Texto adaptado para la lectura.'
+  ),
   'Comentários': ('Comments', 'Comentarios'),
   'O que você achou da notícia?': (
     'What did you think of the story?',

@@ -33,7 +33,10 @@ class TechFeedsTest {
 
   @Test
   void requiresOptInForLicensedPublishers() {
-    assertThat(TechFeeds.catalog(false)).hasSize(10).noneMatch(TechFeeds.Feed::licensedOnly);
-    assertThat(TechFeeds.catalog(true)).hasSize(13);
+    assertThat(TechFeeds.catalog(false)).hasSize(11).noneMatch(TechFeeds.Feed::licensedOnly);
+    assertThat(TechFeeds.catalog(true)).hasSize(14);
+    assertThat(TechFeeds.catalog(false).stream().filter(TechFeeds.Feed::openFullText))
+        .extracting(TechFeeds.Feed::id)
+        .containsExactly("rss-wikimedia-tech");
   }
 }

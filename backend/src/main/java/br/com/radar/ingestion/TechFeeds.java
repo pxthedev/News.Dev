@@ -7,7 +7,17 @@ import java.util.Locale;
 import java.util.regex.Pattern;
 
 final class TechFeeds {
-  record Feed(String id, String name, String url, String fallback, boolean licensedOnly) {
+  record Feed(
+      String id,
+      String name,
+      String url,
+      String fallback,
+      boolean licensedOnly,
+      boolean openFullText) {
+    Feed(String id, String name, String url, String fallback, boolean licensedOnly) {
+      this(id, name, url, fallback, licensedOnly, false);
+    }
+
     String host() {
       return URI.create(url).getHost();
     }
@@ -36,6 +46,13 @@ final class TechFeeds {
               null,
               false),
           new Feed("rss-dbt", "dbt Labs", "https://www.getdbt.com/blog/feed.xml", "dados", false),
+          new Feed(
+              "rss-wikimedia-tech",
+              "Wikimedia Diff",
+              "https://diff.wikimedia.org/category/technology/feed/",
+              "programacao",
+              false,
+              true),
           new Feed(
               "rss-power-bi",
               "Microsoft Power BI",

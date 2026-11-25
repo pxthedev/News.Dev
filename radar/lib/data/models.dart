@@ -334,18 +334,19 @@ class Article {
   bool get isInternationalRss =>
       id.startsWith('rss-') &&
       sources.length == 1 &&
-      const {
-        'TechCrunch',
-        'Ars Technica',
-        'WIRED',
-        'The Verge',
-        'MIT Technology Review',
-        'BBC News',
-        'The Guardian',
-        'The New York Times',
-        'dbt Labs',
-        'Microsoft Power BI',
-      }.contains(sources.single.name);
+      (Uri.tryParse(sources.single.url)?.host == 'diff.wikimedia.org' ||
+          const {
+            'TechCrunch',
+            'Ars Technica',
+            'WIRED',
+            'The Verge',
+            'MIT Technology Review',
+            'BBC News',
+            'The Guardian',
+            'The New York Times',
+            'dbt Labs',
+            'Microsoft Power BI',
+          }.contains(sources.single.name));
 
   String get kickerLabel => kicker ?? category.label;
 

@@ -1,14 +1,11 @@
 import 'dart:math' as math;
 
 import 'package:cupertino_ui/cupertino_ui.dart';
-import 'package:flutter/rendering.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../data/models.dart';
 import '../data/repository.dart';
 import '../services/platform_services.dart';
-import '../sheets/community_sheet.dart';
-import '../sheets/rating_dialog.dart';
 import '../sheets/share_sheet.dart';
 import '../state/app_state.dart';
 import '../theme/tokens.dart';
@@ -16,6 +13,7 @@ import '../utils/format.dart';
 import '../widgets/primitives.dart';
 import '../l10n/app_copy.dart';
 import '../widgets/article_comments.dart';
+import 'full_article_screen.dart';
 
 /// 06 · Matéria
 class ArticleScreen extends StatefulWidget {
@@ -27,10 +25,6 @@ class ArticleScreen extends StatefulWidget {
 }
 
 class _ArticleScreenState extends State<ArticleScreen> {
-  final _scroll = ScrollController();
-  final _readingEnd = GlobalKey();
-  bool _reachedEnd = false;
-  bool _showFullArticle = false;
   AppLanguage? _translationLanguage;
   Future<ArticleTranslation>? _translation;
   Article? _article;
@@ -41,7 +35,6 @@ class _ArticleScreenState extends State<ArticleScreen> {
   void initState() {
     super.initState();
     AppScope.read(context).registerArticleOpened();
-    _scroll.addListener(_onScroll);
     _article = Repo.instance.byId(widget.articleId);
     if (_article == null || _article!.body.trim().isEmpty) _fetch();
   }
@@ -64,44 +57,6 @@ class _ArticleScreenState extends State<ArticleScreen> {
       if (mounted) setState(() => _error = e.message);
     } finally {
       if (mounted) setState(() => _fetching = false);
-    }
-  }
-
-  @override
-  void dispose() {
-    _scroll.dispose();
-    super.dispose();
-  }
-
-  /// Momento positivo: terminou de ler. Pede avaliação ou mostra o teaser da comunidade.
-  void _onScroll() {
-    if (!_showFullArticle) return;
-    final end = _readingEnd.currentContext?.findRenderObject();
-    final viewport = RenderAbstractViewport.maybeOf(end);
-    if (end == null || viewport == null) return;
-    final endOffset = viewport.getOffsetToReveal(end, 1).offset;
-    final remaining = endOffset - _scroll.position.pixels;
-    if (_article case final article?) {
-      final state = AppScope.read(context);
-      final progress = endOffset <= 0
-          ? 1.0
-          : (_scroll.position.pixels / endOffset).clamp(0.0, 1.0);
-      if (progress > (state.readProgress[article.id] ?? 0)) {
-        state.setReadProgress(article.id, progress);
-      }
-    }
-    if (_reachedEnd || remaining > 40) return;
-    _reachedEnd = true;
-    Repo.instance.recordRead(widget.articleId).catchError((Object _) {});
-    final state = AppScope.read(context);
-    if (state.shouldAskRating) {
-      Future.delayed(const Duration(milliseconds: 600), () {
-        if (mounted) showRatingDialog(context);
-      });
-    } else if (state.articlesOpened >= 5 && state.canShowCommunityTeaser) {
-      Future.delayed(const Duration(milliseconds: 600), () {
-        if (mounted) showCommunitySheet(context);
-      });
     }
   }
 
@@ -221,6 +176,10 @@ class _ArticleScreenState extends State<ArticleScreen> {
     final synopsis = _synopsis(
         translation == null ? article.summary : [translation.synopsis],
         paragraphs);
+    final openSource = article.sources
+        .where(
+            (source) => Uri.tryParse(source.url)?.host == 'diff.wikimedia.org')
+        .firstOrNull;
     final publisher = article.id.startsWith('rss-') &&
             article.confirmed &&
             article.sources.length == 1
@@ -233,7 +192,6 @@ class _ArticleScreenState extends State<ArticleScreen> {
 
     return Scaffold(
       body: CustomScrollView(
-        controller: _scroll,
         physics: const BouncingScrollPhysics(),
         slivers: [
           SliverToBoxAdapter(child: SizedBox(height: top + 2)),
@@ -347,37 +305,20 @@ class _ArticleScreenState extends State<ArticleScreen> {
                 if (paragraphs.isNotEmpty) ...[
                   const SizedBox(height: 16),
                   RButton(
-                    _showFullArticle
-                        ? 'Recolher matéria'
-                        : 'Ler matéria completa',
-                    icon: _showFullArticle
-                        ? Icons.expand_less
-                        : Icons.expand_more,
-                    onPressed: () {
-                      setState(() => _showFullArticle = !_showFullArticle);
-                      if (_showFullArticle) {
-                        WidgetsBinding.instance.addPostFrameCallback((_) {
-                          if (mounted && _scroll.hasClients) _onScroll();
-                        });
-                      }
-                    },
-                  ),
-                ],
-                if (_showFullArticle && paragraphs.isNotEmpty) ...[
-                  const SizedBox(height: 28),
-                  Semantics(
-                    header: true,
-                    child: Text(context.tr('Matéria completa'),
-                        style: RText.title3),
-                  ),
-                  const SizedBox(height: 12),
-                  for (final paragraph in paragraphs)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 14),
-                      child: SelectableText(paragraph,
-                          style: RText.body.copyWith(height: 1.65)),
+                    'Ler matéria completa',
+                    icon: Icons.arrow_forward,
+                    onPressed: () => Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => FullArticleScreen(
+                          articleId: article.id,
+                          title: translation?.title ?? article.title,
+                          paragraphs: paragraphs,
+                          openSource: openSource,
+                          translated: translation != null,
+                        ),
+                      ),
                     ),
-                  SizedBox(key: _readingEnd),
+                  ),
                 ],
                 if (paragraphs.isEmpty) ...[
                   const SizedBox(height: 12),

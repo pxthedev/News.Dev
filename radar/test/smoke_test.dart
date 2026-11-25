@@ -62,23 +62,32 @@ void main() {
     final readButton = find.text('Ler matéria completa');
     await tester.ensureVisible(readButton);
     await tester.tap(readButton);
-    await tester.pump();
+    await tester.pumpAndSettle();
     expect(fullArticle, findsOneWidget);
-    expect(tester.getTopLeft(synopsis).dy,
-        lessThan(tester.getTopLeft(fullArticle).dy));
-    final points = repo.byId('nvidia-fabrica')!.summary;
-    expect(find.textContaining(points.first), findsOneWidget);
+    final article = repo.byId('nvidia-fabrica')!;
+    expect(find.text(article.title), findsOneWidget);
+    expect(find.text(article.body.split('\n\n').first.trim()), findsOneWidget);
+    expect(synopsis, findsNothing);
+    expect(find.text('Fontes'), findsNothing);
+    await tester.tap(find.byType(BackButton));
+    await tester.pumpAndSettle();
+    expect(find.textContaining(article.summary.first), findsOneWidget);
     expect(find.textContaining('Ouvir '), findsNothing);
     expect(find.text('Fontes'), findsOneWidget);
-    expect(tester.getTopLeft(find.text('Fontes')).dy,
-        greaterThan(tester.getTopLeft(fullArticle).dy));
     state.setLanguage(AppLanguage.english);
     await tester.pumpAndSettle();
     expect(find.text('Synopsis'), findsOneWidget);
     expect(find.text('Translated synopsis.'), findsOneWidget);
+    expect(find.text('Sources'), findsOneWidget);
+    final readTranslated = find.text('Read full article');
+    await tester.ensureVisible(readTranslated);
+    await tester.tap(readTranslated);
+    await tester.pumpAndSettle();
+    expect(find.text('Translated title'), findsOneWidget);
     expect(find.text('Translated full story.'), findsOneWidget);
     expect(find.text('Full article'), findsOneWidget);
-    expect(find.text('Sources'), findsOneWidget);
+    await tester.tap(find.byType(BackButton));
+    await tester.pumpAndSettle();
     state.setLanguage(AppLanguage.portuguese);
     await tester.pumpAndSettle();
 

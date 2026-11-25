@@ -138,8 +138,15 @@ public class IngestionService {
         String key = hash(canonical);
         String id = "rss-" + key.substring(0, 32);
         var imported = store.doc("imports", key);
+        boolean openFullText =
+            feed != null
+                && feed.openFullText()
+                && feed.url().equals(sourceUrl)
+                && feed.host().equalsIgnoreCase(link.getHost());
         String fullText =
-            Boolean.TRUE.equals(source.getBoolean("allowFullText")) ? fullText(entry, excerpt) : "";
+            openFullText || Boolean.TRUE.equals(source.getBoolean("allowFullText"))
+                ? fullText(entry, excerpt)
+                : "";
         int readingMinutes =
             fullText.isBlank()
                 ? 1
@@ -174,7 +181,14 @@ public class IngestionService {
                 null,
                 now,
                 published,
-                List.of(new Source(source.getString("name"), canonical, null, null)),
+                List.of(
+                    new Source(
+                        openFullText && !fullText.isBlank()
+                            ? openTextCredit(entry, source.getString("name"))
+                            : source.getString("name"),
+                        canonical,
+                        null,
+                        null)),
                 1,
                 false,
                 null,
@@ -226,6 +240,17 @@ public class IngestionService {
         .filter(value -> !RssFetcher.text(value).equals(excerpt))
         .findFirst()
         .orElse("");
+  }
+
+  private static String openTextCredit(SyndEntry entry, String outlet) {
+    String authors =
+        entry.getAuthors().stream()
+            .map(author -> RssFetcher.text(author.getName()))
+            .filter(name -> !name.isBlank())
+            .distinct()
+            .collect(java.util.stream.Collectors.joining(", "));
+    if (authors.isBlank()) authors = RssFetcher.text(entry.getAuthor());
+    return authors.isBlank() ? outlet : outlet + " · " + authors;
   }
 
   public static String canonical(URI uri) {
