@@ -364,13 +364,19 @@ class _ArticleScreenState extends State<ArticleScreen> {
   }
 }
 
+// O backend gera a sinopse como um resumo de 2–3 frases (até ~480 caracteres).
+const _synopsisMaxLength = 480;
+
 String _synopsis(List<String> summary, List<String> paragraphs) {
   final excerpt = [...summary, ...paragraphs]
       .map((point) => point.replaceAll(RegExp(r'\s+'), ' ').trim())
       .where((text) => text.isNotEmpty)
       .firstOrNull;
-  if (excerpt == null || excerpt.runes.length <= 180) return excerpt ?? '';
-  final prefix = String.fromCharCodes(excerpt.runes.take(179));
+  if (excerpt == null || excerpt.runes.length <= _synopsisMaxLength) {
+    return excerpt ?? '';
+  }
+  final prefix =
+      String.fromCharCodes(excerpt.runes.take(_synopsisMaxLength - 1));
   final word = prefix.lastIndexOf(' ');
   return '${word > prefix.length ~/ 2 ? prefix.substring(0, word) : prefix}…';
 }

@@ -32,7 +32,12 @@ public class ContentRepository {
     return decode(doc);
   }
 
-  public void fillImportedBody(String id, String body, int readingMinutes) {
+  public boolean bodyMissing(String id) {
+    var doc = store.get(store.doc("articles", id));
+    return doc.exists() && decode(doc).body().isBlank();
+  }
+
+  public void fillImportedBody(String id, String body, int readingMinutes, String synopsis) {
     var ref = store.doc("articles", id);
     store.transaction(
         tx -> {
@@ -41,6 +46,10 @@ public class ContentRepository {
           var payload = json.read(doc.getString("payload"), ObjectNode.class);
           payload.put("body", body);
           payload.put("readingMinutes", readingMinutes);
+          if (synopsis != null && !synopsis.isBlank()) {
+            var summary = payload.putArray("summary");
+            summary.add(synopsis);
+          }
           tx.update(ref, "payload", json.write(payload));
           return null;
         });
