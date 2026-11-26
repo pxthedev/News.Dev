@@ -61,10 +61,10 @@ Os itens recentes são agrupados pelas categorias do aplicativo e deduplicados
 pela URL canônica. O catálogo publica manchetes com atribuição, link original
 e uma descrição curta quando fornecida pelo feed.
 
-O catálogo padrão reúne g1, Canaltech, Tecnoblog, TechCrunch, Ars Technica,
-WIRED, The Verge e MIT Technology Review. BBC News, The Guardian e The New York
-Times ficam desativados por padrão. Ative `TECH_LICENSED_FEEDS_ENABLED=true`
-somente com as permissões necessárias para o seu uso.
+O coletor automático usa os RSS do g1, da CNN Brasil e da Agência Brasil
+(EBC). Feed, destaques e busca exibem matérias cuja fonte principal pertence
+à lista de emissoras brasileiras. O filtro também vale para matérias já
+importadas.
 
 Fontes cadastradas pelo endpoint de administração continuam usando
 `RSS_ALLOWED_HOSTS` e o fluxo de revisão editorial.

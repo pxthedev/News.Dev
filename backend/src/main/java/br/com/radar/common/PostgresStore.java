@@ -443,6 +443,19 @@ public class PostgresStore {
       return whereArrayContainsAny(f, List.of(v));
     }
 
+    public Query wherePrimaryArticleSourceMatches(String pattern) {
+      var q = new Query(this);
+      q.predicates.add("((data->>'payload')::jsonb #>> '{sources,0,url}') ~* ?");
+      q.params.add(pattern);
+      return q;
+    }
+
+    public Query whereArticleHasBody() {
+      var q = new Query(this);
+      q.predicates.add("((data->>'payload')::jsonb ->> 'body') ~ '[^[:space:]]'");
+      return q;
+    }
+
     public Query whereArrayContainsAny(String f, List<?> values) {
       field(f);
       var q = new Query(this);

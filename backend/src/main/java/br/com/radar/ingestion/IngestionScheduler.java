@@ -1,6 +1,7 @@
 package br.com.radar.ingestion;
 
 import br.com.radar.common.PostgresStore;
+import br.com.radar.content.BrazilianPublishers;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
@@ -39,7 +40,8 @@ public class IngestionScheduler {
   public void run() {
     if (catalogEnabled) {
       for (var feed : TechFeeds.catalog(licensedFeeds)) {
-        collect(feed.id(), () -> service.run(feed));
+        if (BrazilianPublishers.contains(feed.url()) || feed.id().equals("rss-cnn-brasil"))
+          collect(feed.id(), () -> service.run(feed));
       }
     }
     for (var source : store.query(store.collection("sources").whereEqualTo("enabled", true))) {

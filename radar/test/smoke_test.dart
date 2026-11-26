@@ -141,6 +141,24 @@ void main() {
     expect(find.text('Boa análise!'), findsOneWidget);
     final page = await repo.articleComments('nvidia-fabrica');
     expect(page.items.single.body, 'Boa análise!');
+    await tester.tap(find.text('Curtir · 0'));
+    await tester.pumpAndSettle();
+    expect(find.text('Descurtir · 1'), findsOneWidget);
+    await tester.tap(find.text('Descurtir · 1'));
+    await tester.pumpAndSettle();
+    expect(find.text('Curtir · 0'), findsOneWidget);
+    await tester.tap(find.text('Responder'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField).last, 'Também concordo.');
+    await tester.pump();
+    final publishReply = find.text('Publicar resposta');
+    await tester.ensureVisible(publishReply);
+    await tester.tap(publishReply);
+    await tester.pumpAndSettle();
+    expect(find.text('Também concordo.'), findsOneWidget);
+    final replies = await repo.articleComments('nvidia-fabrica',
+        parentId: page.items.single.id);
+    expect(replies.items.single.body, 'Também concordo.');
     await tester.pumpWidget(const SizedBox());
     state.dispose();
   });

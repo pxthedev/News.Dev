@@ -144,9 +144,10 @@ class HttpRepository extends RadarRepository {
 
   @override
   Future<ArticleCommentsPage> articleComments(String id,
-      {String? before}) async {
+      {String? before, String? parentId}) async {
     final result = await _get(
-        '/v1/articles/${Uri.encodeComponent(id)}/comments', {'before': before});
+        '/v1/articles/${Uri.encodeComponent(id)}/comments',
+        {'before': before, 'parentId': parentId});
     return (
       items: result.objects('items').map(ArticleComment.fromJson).toList(),
       nextCursor: result['nextCursor'] as String?,
@@ -154,11 +155,24 @@ class HttpRepository extends RadarRepository {
   }
 
   @override
-  Future<ArticleComment> postArticleComment(String id, String body) async {
+  Future<ArticleComment> postArticleComment(String id, String body,
+      {String? parentId}) async {
     _checkOnline();
     return ArticleComment.fromJson(await api.post(
-        '/v1/articles/${Uri.encodeComponent(id)}/comments',
-        body: {'body': body}) as Json);
+            '/v1/articles/${Uri.encodeComponent(id)}/comments',
+            body: {'body': body, if (parentId != null) 'parentId': parentId})
+        as Json);
+  }
+
+  @override
+  Future<int> setArticleCommentLike(
+      String id, String commentId, bool liked) async {
+    _checkOnline();
+    final path =
+        '/v1/articles/${Uri.encodeComponent(id)}/comments/${Uri.encodeComponent(commentId)}/like';
+    final result =
+        (liked ? await api.put(path) : await api.delete(path)) as Json;
+    return result.integer('likeCount');
   }
 
   @override

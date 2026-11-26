@@ -90,8 +90,11 @@ abstract class RadarRepository {
   /// Cache primeiro; se não tiver, busca. null = matéria não existe (404).
   Future<Article?> article(String id);
 
-  Future<ArticleCommentsPage> articleComments(String id, {String? before});
-  Future<ArticleComment> postArticleComment(String id, String body);
+  Future<ArticleCommentsPage> articleComments(String id,
+      {String? before, String? parentId});
+  Future<ArticleComment> postArticleComment(String id, String body,
+      {String? parentId});
+  Future<int> setArticleCommentLike(String id, String commentId, bool liked);
   Future<void> deleteArticleComment(String id, String commentId);
 
   Future<ArticleTranslation> translateArticle(

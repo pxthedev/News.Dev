@@ -27,6 +27,14 @@ final class TechFeeds {
       List.of(
           new Feed(
               "rss-g1-tech", "g1", "https://g1.globo.com/rss/g1/tecnologia/", "tech-br", false),
+          new Feed(
+              "rss-cnn-brasil", "CNN Brasil", "https://admin.cnnbrasil.com.br/feed/", null, false),
+          new Feed(
+              "rss-ebc-geral",
+              "Agência Brasil (EBC)",
+              "https://agenciabrasil.ebc.com.br/rss/geral/feed.xml",
+              null,
+              false),
           new Feed("rss-canaltech", "Canaltech", "https://canaltech.com.br/rss/", null, false),
           new Feed("rss-tecnoblog", "Tecnoblog", "https://tecnoblog.net/feed/", "tech-br", false),
           new Feed(

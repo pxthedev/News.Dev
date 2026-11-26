@@ -123,6 +123,26 @@ const _translations = <String, (String, String)>{
     'Texto adaptado para la lectura.'
   ),
   'Comentários': ('Comments', 'Comentarios'),
+  'Curtir': ('Like', 'Me gusta'),
+  'Descurtir': ('Unlike', 'Quitar Me gusta'),
+  'Responder': ('Reply', 'Responder'),
+  'Sua resposta': ('Your reply', 'Tu respuesta'),
+  'Publicar resposta': ('Post reply', 'Publicar respuesta'),
+  'Ver respostas ({n})': ('View replies ({n})', 'Ver respuestas ({n})'),
+  'Ocultar respostas': ('Hide replies', 'Ocultar respuestas'),
+  'Ver mais respostas': ('Load more replies', 'Ver más respuestas'),
+  'As respostas também serão excluídas.': (
+    'Replies will also be deleted.',
+    'También se eliminarán las respuestas.'
+  ),
+  'Não foi possível carregar as respostas.': (
+    'Could not load replies.',
+    'No se pudieron cargar las respuestas.'
+  ),
+  'Não foi possível atualizar a curtida.': (
+    'Could not update the like.',
+    'No se pudo actualizar el Me gusta.'
+  ),
   'O que você achou da notícia?': (
     'What did you think of the story?',
     '¿Qué te pareció la noticia?'

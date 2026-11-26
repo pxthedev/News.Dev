@@ -53,6 +53,7 @@ class ApiIntegrationTest {
   @Autowired br.com.radar.delivery.PushSender pushSender;
   @Autowired javax.sql.DataSource dataSource;
   @Autowired br.com.radar.common.JsonStore jsonStore;
+  @Autowired br.com.radar.content.ContentRepository contentRepository;
   @Autowired MockMvc mvc;
   @Autowired ObjectMapper json;
   @Autowired PostgresStore db;
@@ -79,6 +80,40 @@ class ApiIntegrationTest {
             .asText();
     user = anonymous().get("token").asText();
     other = anonymous().get("token").asText();
+  }
+
+  @Test
+  void discoveryExcludesArticlesFromOtherPublishersBeforePagination() throws Exception {
+    publish(article("br-tech", true, "normal", 120));
+    var foreign = article("foreign-tech", true, "urgent", 30);
+    foreign.put(
+        "sources",
+        List.of(Map.of("name", "Fonte de teste", "url", "https://g1.globo.com.example.org/tech")));
+    publish(foreign);
+    var unrelated = article("cnn-receita", true, "urgent", 15);
+    unrelated.put(
+        "sources",
+        List.of(
+            Map.of(
+                "name",
+                "CNN Brasil",
+                "url",
+                "https://www.cnnbrasil.com.br/lifestyle/ceia-nas-redes-sociais/")));
+    publish(unrelated);
+    var excerpt = article("titulo-sem-texto", true, "urgent", 10);
+    excerpt.put("body", " ");
+    contentRepository.save(
+        json.convertValue(excerpt, br.com.radar.content.ContentModels.Article.class));
+    mvc.perform(get("/v1/feed?limit=1").header("Authorization", "Bearer " + user))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.items.length()").value(1))
+        .andExpect(jsonPath("$.items[0].id").value("titulo-sem-texto"));
+    mvc.perform(get("/v1/home").header("Authorization", "Bearer " + user))
+        .andExpect(jsonPath("$.hero.id").value("br-tech"));
+    mvc.perform(get("/v1/search?q=Nvidia").header("Authorization", "Bearer " + user))
+        .andExpect(jsonPath("$.articles.length()").value(2));
+    mvc.perform(get("/v1/explore").header("Authorization", "Bearer " + user))
+        .andExpect(jsonPath("$.trending.length()").value(2));
   }
 
   @Test
@@ -118,16 +153,49 @@ class ApiIntegrationTest {
             .andReturn()
             .getResponse();
     String commentId = json.readTree(result.getContentAsString()).get("id").asText();
+    String commentPath = path + "/" + commentId;
+    mvc.perform(put(commentPath + "/like").header("Authorization", "Bearer " + other))
+        .andExpect(status().isForbidden());
+    for (int attempt = 0; attempt < 2; attempt++) {
+      mvc.perform(put(commentPath + "/like").header("Authorization", "Bearer " + account))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$.likeCount").value(1));
+    }
+    var reply =
+        mvc.perform(
+                post(path)
+                    .header("Authorization", "Bearer " + account)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(
+                        json.writeValueAsBytes(
+                            Map.of("body", "Minha resposta", "parentId", commentId))))
+            .andExpect(status().isCreated())
+            .andReturn()
+            .getResponse();
+    String replyId = json.readTree(reply.getContentAsString()).get("id").asText();
+    mvc.perform(get(path).param("parentId", commentId).header("Authorization", "Bearer " + other))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.items[0].id").value(replyId));
     mvc.perform(get(path).header("Authorization", "Bearer " + other))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.items[0].author").value("Leitora"))
         .andExpect(jsonPath("$.items[0].mine").value(false))
+        .andExpect(jsonPath("$.items.length()").value(1))
+        .andExpect(jsonPath("$.items[0].likeCount").value(1))
+        .andExpect(jsonPath("$.items[0].liked").value(false))
+        .andExpect(jsonPath("$.items[0].replyCount").value(1))
         .andExpect(jsonPath("$.items[0].authorId").doesNotExist());
+    mvc.perform(delete(commentPath + "/like").header("Authorization", "Bearer " + account))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.likeCount").value(0));
     mvc.perform(delete(path + "/" + commentId).header("Authorization", "Bearer " + other))
         .andExpect(status().isNotFound());
     mvc.perform(delete(path + "/" + commentId).header("Authorization", "Bearer " + account))
         .andExpect(status().isNoContent());
     mvc.perform(get(path).header("Authorization", "Bearer " + other))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.items").isEmpty());
+    mvc.perform(get(path).param("parentId", commentId).header("Authorization", "Bearer " + other))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.items").isEmpty());
   }
@@ -229,7 +297,8 @@ class ApiIntegrationTest {
             Map.entry("detectedAt", Instant.now().minusSeconds(age + 60).toString()),
             Map.entry("publishedAt", Instant.now().minusSeconds(age).toString()),
             Map.entry(
-                "sources", List.of(Map.of("name", "Fonte de teste", "url", "https://example.org"))),
+                "sources",
+                List.of(Map.of("name", "Fonte de teste", "url", "https://g1.globo.com"))),
             Map.entry("sourceCount", 1),
             Map.entry("firstInBrazil", true),
             Map.entry("leadMinutes", 30),
@@ -819,7 +888,7 @@ class ApiIntegrationTest {
   void rssImportsAreDeduplicatedAndRequireEditorialConfirmation() throws Exception {
     var entry = new com.rometools.rome.feed.synd.SyndEntryImpl();
     entry.setTitle("Novidade via RSS");
-    entry.setLink("https://example.org/news?id=1&utm_source=feed");
+    entry.setLink("https://g1.globo.com/news?id=1&utm_source=feed");
     entry.setPublishedDate(new java.util.Date());
     var description = new com.rometools.rome.feed.synd.SyndContentImpl();
     description.setValue("Resumo da fonte");
@@ -855,7 +924,7 @@ class ApiIntegrationTest {
     mvc.perform(get("/v1/feed?rumors=true").header("Authorization", "Bearer " + user))
         .andExpect(jsonPath("$.items[0].confirmed").value(false))
         .andExpect(jsonPath("$.items[0].body").value(""))
-        .andExpect(jsonPath("$.items[0].sources[0].url").value("https://example.org/news?id=1"));
+        .andExpect(jsonPath("$.items[0].sources[0].url").value("https://g1.globo.com/news?id=1"));
     mvc.perform(
             put("/v1/admin/sources/test-feed")
                 .header("Authorization", "Bearer " + admin)

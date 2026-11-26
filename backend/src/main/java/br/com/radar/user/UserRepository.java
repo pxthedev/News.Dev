@@ -20,11 +20,17 @@ public class UserRepository {
   private final PostgresStore store;
   private final JsonStore json;
   private final IdentityRepository identities;
+  private final ContentRepository content;
 
-  public UserRepository(PostgresStore store, JsonStore json, IdentityRepository identities) {
+  public UserRepository(
+      PostgresStore store,
+      JsonStore json,
+      IdentityRepository identities,
+      ContentRepository content) {
     this.store = store;
     this.json = json;
     this.identities = identities;
+    this.content = content;
   }
 
   public CollectionReference collection(String user, String name) {
@@ -405,20 +411,18 @@ public class UserRepository {
         .limit(20)
         .forEach(e -> candidates.add(e.getKey()));
     store
-        .query(
-            store
-                .collection("articles")
-                .whereEqualTo("confirmed", true)
-                .whereLessThanOrEqualTo("publishedAt", time(Instant.now()))
-                .orderBy("publishedAt", Query.Direction.DESCENDING)
-                .limit(3))
+        .query(content.base(false).orderBy("publishedAt", Query.Direction.DESCENDING).limit(3))
         .forEach(d -> candidates.add(d.getId()));
     var result = new ArrayList<Map<String, Object>>();
     for (String id : candidates) {
       var a = store.get(store.doc("articles", id));
       if (a.exists()
           && Boolean.TRUE.equals(a.getBoolean("confirmed"))
-          && !instant(a.getInstant("publishedAt")).isAfter(Instant.now()))
+          && !instant(a.getInstant("publishedAt")).isAfter(Instant.now())
+          && content.decode(a).sources().stream()
+              .findFirst()
+              .map(source -> BrazilianPublishers.contains(source.url()))
+              .orElse(false))
         result.add(
             Map.of(
                 "articleId",

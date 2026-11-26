@@ -117,6 +117,7 @@ public class IngestionService {
           continue;
         }
         String title = RssFetcher.text(entry.getTitle());
+        if (feed != null && !BrazilianPublishers.contains(link.toString())) continue;
         if (title.isBlank()) continue;
         title = title.substring(0, Math.min(title.length(), 240));
         String excerpt =
@@ -147,6 +148,13 @@ public class IngestionService {
             openFullText || Boolean.TRUE.equals(source.getBoolean("allowFullText"))
                 ? fullText(entry, excerpt)
                 : "";
+        if (fullText.isBlank()
+            && feed != null
+            && feed.id().equals("rss-ebc-geral")
+            && feed.url().equals(sourceUrl)
+            && feed.host().equalsIgnoreCase(link.getHost())) {
+          fullText = agencyBrasilBody(entry);
+        }
         int readingMinutes =
             fullText.isBlank()
                 ? 1
@@ -240,6 +248,18 @@ public class IngestionService {
         .filter(value -> !RssFetcher.text(value).equals(excerpt))
         .findFirst()
         .orElse("");
+  }
+
+  static String agencyBrasilBody(SyndEntry entry) {
+    if (entry.getDescription() == null) return "";
+    var body = RssFetcher.articleText(entry.getDescription().getValue());
+    // O feed Geral da EBC publica o corpo em description. Trechos curtos ficam como sinopse.
+    if (body.length() < 350 || body.length() > 100_000 || body.split("\n\n").length < 3) return "";
+    String author = RssFetcher.text(entry.getAuthor()).toLowerCase(Locale.ROOT);
+    if (author.matches(
+        ".*(?:reuters|associated press|lusa|sputnik|xinhua|agência efe|agência france-presse|\\bafp\\b).*"))
+      return "";
+    return body;
   }
 
   private static String openTextCredit(SyndEntry entry, String outlet) {

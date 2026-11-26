@@ -6,6 +6,21 @@ import org.junit.jupiter.api.Test;
 
 class TechFeedsTest {
   @Test
+  void readsTheEbcBodyFromDescriptionAndKeepsShortPreviewsOutOfTheReader() {
+    var entry = new com.rometools.rome.feed.synd.SyndEntryImpl();
+    var description = new com.rometools.rome.feed.synd.SyndContentImpl();
+    entry.setDescription(description);
+    description.setValue("<p>Uma sinopse.</p>");
+    assertThat(IngestionService.agencyBrasilBody(entry)).isEmpty();
+    String paragraph = "Texto de teste sobre tecnologia. ".repeat(5).trim();
+    description.setValue(("<p>" + paragraph + "</p>").repeat(3));
+    assertThat(IngestionService.agencyBrasilBody(entry))
+        .isEqualTo(String.join("\n\n", paragraph, paragraph, paragraph));
+    entry.setAuthor("Reuters");
+    assertThat(IngestionService.agencyBrasilBody(entry)).isEmpty();
+  }
+
+  @Test
   void recognizesPortugueseAndEnglishTechInTitleOrDescription() {
     assertThat(TechFeeds.category("Inteligência artificial no Brasil", "", "tech-br"))
         .isEqualTo("ia");
@@ -33,8 +48,8 @@ class TechFeedsTest {
 
   @Test
   void requiresOptInForLicensedPublishers() {
-    assertThat(TechFeeds.catalog(false)).hasSize(11).noneMatch(TechFeeds.Feed::licensedOnly);
-    assertThat(TechFeeds.catalog(true)).hasSize(14);
+    assertThat(TechFeeds.catalog(false)).hasSize(13).noneMatch(TechFeeds.Feed::licensedOnly);
+    assertThat(TechFeeds.catalog(true)).hasSize(16);
     assertThat(TechFeeds.catalog(false).stream().filter(TechFeeds.Feed::openFullText))
         .extracting(TechFeeds.Feed::id)
         .containsExactly("rss-wikimedia-tech");

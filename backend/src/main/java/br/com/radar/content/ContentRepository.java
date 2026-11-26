@@ -62,7 +62,10 @@ public class ContentRepository {
 
   public Query base(boolean rumors) {
     Query q =
-        store.collection("articles").whereLessThanOrEqualTo("publishedAt", time(Instant.now()));
+        store
+            .collection("articles")
+            .wherePrimaryArticleSourceMatches(BrazilianPublishers.URL_PATTERN)
+            .whereLessThanOrEqualTo("publishedAt", time(Instant.now()));
     return rumors ? q : q.whereEqualTo("confirmed", true);
   }
 

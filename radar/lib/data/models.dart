@@ -249,13 +249,23 @@ class Entity {
 
 class ArticleComment {
   const ArticleComment(
-      this.id, this.author, this.body, this.createdAt, this.mine);
+      this.id, this.author, this.body, this.createdAt, this.mine,
+      {this.likeCount = 0, this.liked = false, this.replyCount = 0});
 
   final String id;
   final String author;
   final String body;
   final DateTime createdAt;
   final bool mine;
+  final int likeCount;
+  final bool liked;
+  final int replyCount;
+
+  ArticleComment copyWith({int? likeCount, bool? liked, int? replyCount}) =>
+      ArticleComment(id, author, body, createdAt, mine,
+          likeCount: likeCount ?? this.likeCount,
+          liked: liked ?? this.liked,
+          replyCount: replyCount ?? this.replyCount);
 
   factory ArticleComment.fromJson(Json json) => ArticleComment(
         json.str('id'),
@@ -263,6 +273,9 @@ class ArticleComment {
         json.str('body'),
         json.date('createdAt'),
         json.boolean('mine'),
+        likeCount: json.integer('likeCount', fallback: 0),
+        liked: json.boolean('liked'),
+        replyCount: json.integer('replyCount', fallback: 0),
       );
 }
 

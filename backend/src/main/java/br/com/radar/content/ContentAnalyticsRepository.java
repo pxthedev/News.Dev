@@ -34,17 +34,18 @@ public class ContentAnalyticsRepository {
   }
 
   public String heroId(boolean rumors) {
-    for (String urgency : List.of("urgent", "important", "normal")) {
-      var rows =
-          store.query(
-              content
-                  .base(rumors)
-                  .whereEqualTo("urgency", urgency)
-                  .whereGreaterThanOrEqualTo("publishedAt", time(week()))
-                  .orderBy("publishedAt", Query.Direction.DESCENDING)
-                  .limit(1)
-                  .select(new String[0]));
-      if (!rows.isEmpty()) return rows.getFirst().getId();
+    Query recent = content.base(rumors).whereGreaterThanOrEqualTo("publishedAt", time(week()));
+    for (Query candidates : List.of(recent.whereArticleHasBody(), recent)) {
+      for (String urgency : List.of("urgent", "important", "normal")) {
+        var rows =
+            store.query(
+                candidates
+                    .whereEqualTo("urgency", urgency)
+                    .orderBy("publishedAt", Query.Direction.DESCENDING)
+                    .limit(1)
+                    .select(new String[0]));
+        if (!rows.isEmpty()) return rows.getFirst().getId();
+      }
     }
     var page = content.feed("", "for-you", rumors, null, null, null, 1, List.of());
     return page.items().isEmpty() ? null : page.items().getFirst().id();

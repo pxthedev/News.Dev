@@ -20,28 +20,68 @@ class MockRepository extends RadarRepository {
   final List<Article> _arrived = [];
   final _alerts = buildMockAlerts();
   final _comments = <String, List<ArticleComment>>{};
+  final _replies = <String, List<ArticleComment>>{};
   int _commentSequence = 0;
 
   @override
   Future<ArticleCommentsPage> articleComments(String id,
-          {String? before}) async =>
+          {String? before, String? parentId}) async =>
       (
-        items: List<ArticleComment>.of(_comments[id] ?? const []),
+        items: List<ArticleComment>.of(
+            (parentId == null ? _comments[id] : _replies[parentId]) ??
+                const []),
         nextCursor: null
       );
 
   @override
-  Future<ArticleComment> postArticleComment(String id, String body) async {
+  Future<ArticleComment> postArticleComment(String id, String body,
+      {String? parentId}) async {
     final profile = await me();
     final comment = ArticleComment(
         '${++_commentSequence}', profile.name, body, DateTime.now(), true);
-    (_comments[id] ??= []).insert(0, comment);
+    final roots = _comments.putIfAbsent(id, () => []);
+    if (parentId == null) {
+      roots.insert(0, comment);
+    } else {
+      final index = roots.indexWhere((item) => item.id == parentId);
+      if (index < 0) throw const RepoException('Comentário indisponível.');
+      (_replies[parentId] ??= []).insert(0, comment);
+      roots[index] =
+          roots[index].copyWith(replyCount: _replies[parentId]!.length);
+    }
     return comment;
   }
 
   @override
   Future<void> deleteArticleComment(String id, String commentId) async {
-    _comments[id]?.removeWhere((comment) => comment.id == commentId);
+    final roots = _comments[id];
+    if (roots == null) return;
+    roots.removeWhere((comment) => comment.id == commentId);
+    _replies.remove(commentId);
+    for (var i = 0; i < roots.length; i++) {
+      final replies = _replies[roots[i].id];
+      if (replies == null) continue;
+      replies.removeWhere((reply) => reply.id == commentId);
+      roots[i] = roots[i].copyWith(replyCount: replies.length);
+    }
+  }
+
+  @override
+  Future<int> setArticleCommentLike(
+      String id, String commentId, bool liked) async {
+    final roots = _comments[id] ?? const <ArticleComment>[];
+    for (final list in [
+      roots,
+      for (final root in roots)
+        if (_replies[root.id] case final replies?) replies,
+    ]) {
+      final index = list.indexWhere((comment) => comment.id == commentId);
+      if (index < 0) continue;
+      list[index] =
+          list[index].copyWith(liked: liked, likeCount: liked ? 1 : 0);
+      return list[index].likeCount;
+    }
+    throw const RepoException('Comentário indisponível.');
   }
 
   final Map<String, SavedEntry> _saved = {
