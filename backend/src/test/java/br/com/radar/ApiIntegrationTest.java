@@ -107,13 +107,13 @@ class ApiIntegrationTest {
     mvc.perform(get("/v1/feed?limit=1").header("Authorization", "Bearer " + user))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.items.length()").value(1))
-        .andExpect(jsonPath("$.items[0].id").value("titulo-sem-texto"));
+        .andExpect(jsonPath("$.items[0].id").value("br-tech"));
     mvc.perform(get("/v1/home").header("Authorization", "Bearer " + user))
         .andExpect(jsonPath("$.hero.id").value("br-tech"));
     mvc.perform(get("/v1/search?q=Nvidia").header("Authorization", "Bearer " + user))
-        .andExpect(jsonPath("$.articles.length()").value(2));
+        .andExpect(jsonPath("$.articles.length()").value(1));
     mvc.perform(get("/v1/explore").header("Authorization", "Bearer " + user))
-        .andExpect(jsonPath("$.trending.length()").value(2));
+        .andExpect(jsonPath("$.trending.length()").value(1));
   }
 
   @Test
@@ -922,9 +922,7 @@ class ApiIntegrationTest {
     mvc.perform(get("/v1/feed").header("Authorization", "Bearer " + user))
         .andExpect(jsonPath("$.items.length()").value(0));
     mvc.perform(get("/v1/feed?rumors=true").header("Authorization", "Bearer " + user))
-        .andExpect(jsonPath("$.items[0].confirmed").value(false))
-        .andExpect(jsonPath("$.items[0].body").value(""))
-        .andExpect(jsonPath("$.items[0].sources[0].url").value("https://g1.globo.com/news?id=1"));
+        .andExpect(jsonPath("$.items.length()").value(0));
     mvc.perform(
             put("/v1/admin/sources/test-feed")
                 .header("Authorization", "Bearer " + admin)
@@ -946,6 +944,8 @@ class ApiIntegrationTest {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.imported").value(0));
     mvc.perform(get("/v1/feed?rumors=true").header("Authorization", "Bearer " + user))
+        .andExpect(jsonPath("$.items[0].confirmed").value(false))
+        .andExpect(jsonPath("$.items[0].sources[0].url").value("https://g1.globo.com/news?id=1"))
         .andExpect(
             jsonPath("$.items[0].body")
                 .value("Primeiro parágrafo & detalhes.\n\nSegundo parágrafo."));

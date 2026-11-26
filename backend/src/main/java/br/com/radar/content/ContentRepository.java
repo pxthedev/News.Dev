@@ -65,6 +65,7 @@ public class ContentRepository {
         store
             .collection("articles")
             .wherePrimaryArticleSourceMatches(BrazilianPublishers.URL_PATTERN)
+            .whereArticleHasBody()
             .whereLessThanOrEqualTo("publishedAt", time(Instant.now()));
     return rumors ? q : q.whereEqualTo("confirmed", true);
   }

@@ -414,15 +414,17 @@ public class UserRepository {
         .query(content.base(false).orderBy("publishedAt", Query.Direction.DESCENDING).limit(3))
         .forEach(d -> candidates.add(d.getId()));
     var result = new ArrayList<Map<String, Object>>();
+    var eligible = new HashMap<String, DocumentSnapshot>();
+    store
+        .query(
+            content
+                .base(false)
+                .whereIn(FieldPath.documentId(), List.copyOf(candidates))
+                .select("title"))
+        .forEach(article -> eligible.put(article.getId(), article));
     for (String id : candidates) {
-      var a = store.get(store.doc("articles", id));
-      if (a.exists()
-          && Boolean.TRUE.equals(a.getBoolean("confirmed"))
-          && !instant(a.getInstant("publishedAt")).isAfter(Instant.now())
-          && content.decode(a).sources().stream()
-              .findFirst()
-              .map(source -> BrazilianPublishers.contains(source.url()))
-              .orElse(false))
+      var a = eligible.get(id);
+      if (a != null)
         result.add(
             Map.of(
                 "articleId",
