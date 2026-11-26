@@ -68,14 +68,18 @@ public class SecurityConfig {
   }
 
   @Bean
-  SecurityFilterChain security(HttpSecurity http, ObjectMapper mapper) throws Exception {
+  SecurityFilterChain security(
+      HttpSecurity http,
+      ObjectMapper mapper,
+      @org.springframework.beans.factory.annotation.Qualifier("cors") CorsConfigurationSource cors)
+      throws Exception {
     var roles = new JwtGrantedAuthoritiesConverter();
     roles.setAuthoritiesClaimName("roles");
     roles.setAuthorityPrefix("ROLE_");
     var converter = new JwtAuthenticationConverter();
     converter.setJwtGrantedAuthoritiesConverter(roles);
     http.csrf(c -> c.disable())
-        .cors(c -> {})
+        .cors(c -> c.configurationSource(cors))
         .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
         .authorizeHttpRequests(
             a ->
