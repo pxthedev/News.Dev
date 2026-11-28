@@ -18,6 +18,7 @@ class FullArticleScreen extends StatefulWidget {
     required this.paragraphs,
     this.openSource,
     this.translated = false,
+    this.publisher,
   });
 
   final String articleId;
@@ -25,6 +26,9 @@ class FullArticleScreen extends StatefulWidget {
   final List<String> paragraphs;
   final Source? openSource;
   final bool translated;
+
+  /// Veículo de onde o texto foi extraído no modo leitura (crédito no fim).
+  final ({String name, Uri url})? publisher;
 
   @override
   State<FullArticleScreen> createState() => _FullArticleScreenState();
@@ -96,6 +100,21 @@ class _FullArticleScreenState extends State<FullArticleScreen> {
                     padding: const EdgeInsets.only(bottom: 16),
                     child: Text(paragraph,
                         style: RText.body.copyWith(height: 1.65)),
+                  ),
+                if (widget.publisher case final publisher?)
+                  Wrap(
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      Text(
+                          context.tr('Texto publicado por {name}.',
+                              {'name': publisher.name}),
+                          style: RText.caption1),
+                      TextButton(
+                        onPressed: () => PlatformServices.instance
+                            .openUrl(publisher.url.toString()),
+                        child: Text(context.tr('Ver original')),
+                      ),
+                    ],
                   ),
                 if (widget.openSource case final source?)
                   Wrap(

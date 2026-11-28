@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -15,6 +16,7 @@ import '../l10n/app_copy.dart';
 import '../widgets/article_comments.dart';
 import 'full_article_screen.dart';
 import 'publisher_reader_screen.dart';
+import '../services/article_text.dart';
 
 /// 06 · Matéria
 class ArticleScreen extends StatefulWidget {
@@ -30,6 +32,7 @@ class _ArticleScreenState extends State<ArticleScreen> {
   Future<ArticleTranslation>? _translation;
   Article? _article;
   bool _fetching = false;
+  bool _extracting = false;
   String? _error;
 
   @override
@@ -71,6 +74,38 @@ class _ArticleScreenState extends State<ArticleScreen> {
       state.showToast('Removido dos salvos',
           actionLabel: 'Desfazer', onAction: () => state.toggleSave(a.id));
     }
+  }
+
+  /// Modo leitura: extrai o texto da página do veículo no aparelho e abre no
+  /// leitor do app. Sem texto reconhecível, abre a página do veículo no app.
+  Future<void> _readPublisherText(
+      Article article, ({String name, Uri url}) publisher) async {
+    if (_extracting) return;
+    setState(() => _extracting = true);
+    var paragraphs = const <String>[];
+    try {
+      if (!kIsWeb) paragraphs = await ArticleText.instance.fetch(publisher.url);
+    } on Exception {
+      paragraphs = const [];
+    }
+    if (!mounted) return;
+    setState(() => _extracting = false);
+    if (paragraphs.isEmpty) {
+      await PublisherReaderScreen.open(context,
+          url: publisher.url,
+          publisher: publisher.name,
+          articleId: article.id,
+          title: article.title);
+      return;
+    }
+    await Navigator.of(context).push(MaterialPageRoute<void>(
+      builder: (_) => FullArticleScreen(
+        articleId: article.id,
+        title: article.title,
+        paragraphs: paragraphs,
+        publisher: publisher,
+      ),
+    ));
   }
 
   Future<void> _openReadingLink(Uri url) async {
@@ -336,14 +371,17 @@ class _ArticleScreenState extends State<ArticleScreen> {
                   Text(context.tr('Carregando o texto…'),
                       style: RText.footnote.withColor(RColors.textSecondary)),
                 ] else if (paragraphs.isEmpty && readOn != null) ...[
-                  // Veículo sem licença de texto aberto: a matéria completa abre
-                  // na página de quem a publicou, dentro do app.
+                  // Sem texto guardado: o aparelho busca o texto na página do
+                  // veículo e mostra no leitor do app (modo leitura).
                   const SizedBox(height: 16),
                   RButton(
-                    context.tr('Ler matéria completa'),
+                    context.tr(_extracting
+                        ? 'Carregando o texto…'
+                        : 'Ler matéria completa'),
                     icon: Icons.arrow_forward,
-                    onPressed: () => PublisherReaderScreen.open(
-                        context, readOn.url, readOn.name),
+                    onPressed: _extracting
+                        ? null
+                        : () => _readPublisherText(article, readOn),
                   ),
                 ],
                 if (article.sources.isNotEmpty) ...[

@@ -27,6 +27,7 @@ dependencies:
   supabase_flutter: ^2.18.3
   image_picker: 1.2.2
   webview_flutter: ^4.14.1
+  html: ^0.15.7
 dev_dependencies:
   flutter_test:
     sdk: flutter

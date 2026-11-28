@@ -180,6 +180,10 @@ const _translations = <String, (String, String)>{
   ),
   'Tentar de novo': ('Try again', 'Intentar de nuevo'),
   'Abrir no navegador': ('Open in browser', 'Abrir en el navegador'),
+  'Texto publicado por {name}.': (
+    'Text published by {name}.',
+    'Texto publicado por {name}.',
+  ),
   'Ler depois': ('Read later', 'Leer más tarde'),
   'Lidos': ('Read', 'Leídos'),
   'Alertas': ('Alerts', 'Alertas'),
