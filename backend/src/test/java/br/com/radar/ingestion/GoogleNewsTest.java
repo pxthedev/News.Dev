@@ -122,4 +122,41 @@ class GoogleNewsTest {
         GoogleNewsCollector.onSite("g1.globo.com.evil.io", sites));
     org.junit.jupiter.api.Assertions.assertFalse(GoogleNewsCollector.onSite("notr7.com", sites));
   }
+
+  @org.junit.jupiter.api.Test
+  void offTopicHeadlinesHaveNoStrictCategory() {
+    org.junit.jupiter.api.Assertions.assertNull(
+        TechFeeds.strictCategory("Expectativa de vida dos brasileiros chega a quase 77 anos", "games"));
+    org.junit.jupiter.api.Assertions.assertEquals(
+        "games", TechFeeds.strictCategory("Nintendo anuncia novo console", "games"));
+    org.junit.jupiter.api.Assertions.assertEquals(
+        "ia", TechFeeds.strictCategory("OpenAI lança modelo no Brasil", "games"));
+    org.junit.jupiter.api.Assertions.assertEquals(
+        "bigtech", TechFeeds.strictCategory("Google e OpenAI disputam mercado", "bigtech"));
+  }
+
+  @org.junit.jupiter.api.Test
+  void techHeadlinesRemovedByTheFirstCleanupNowMatch() {
+    var cases =
+        java.util.Map.of(
+            "PL das Big Techs: relator altera texto e espera votar nesta terça", "bigtech",
+            "Europa planeja fundo de € 50 bilhões para impulsionar tecnologia quântica", "chips",
+            "Abin apresenta estratégia para criptografia pós-quântica", "seguranca",
+            "Estação espacial chinesa recebe o primeiro astronauta estrangeiro", "espaco",
+            "IFS oferece 180 vagas em curso gratuito de desenvolvimento de games", "games",
+            "Justiça dos EUA condena Huawei por esquema ligado ao Irã", "chips",
+            "Anatel abre consulta pública sobre medidas de segurança em ligações", "tech-br",
+            "Tecnologia permite que paciente tetraplégica controle cadeiras de rodas", "tech-br");
+    cases.forEach(
+        (title, category) ->
+            org.junit.jupiter.api.Assertions.assertEquals(
+                category, TechFeeds.strictCategory(title, "nenhum"), title));
+    for (String title :
+        java.util.List.of(
+            "Mulher perde R$ 80 mil após cair no 'golpe do amor' aplicado por falso médico",
+            "Trabuco aceita convite e será ministro da Fazenda de Lula",
+            "Celular explode dentro do bolso de empresário no meio do trânsito",
+            "Superlua: veja quando e como observar fenômeno em Goiás"))
+      org.junit.jupiter.api.Assertions.assertNull(TechFeeds.strictCategory(title, "nenhum"), title);
+  }
 }

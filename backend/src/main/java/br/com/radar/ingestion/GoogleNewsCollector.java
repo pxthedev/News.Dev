@@ -117,7 +117,7 @@ public class GoogleNewsCollector {
 
   /** Contadores de uma busca, para o log mostrar onde as matérias ficam pelo caminho. */
   static final class Stats {
-    int found, alreadySeen, unresolved, otherSite, duplicate, noSynopsis, imported;
+    int found, alreadySeen, unresolved, otherSite, duplicate, offTopic, noSynopsis, imported;
     String error;
 
     @Override
@@ -132,6 +132,8 @@ public class GoogleNewsCollector {
           + otherSite
           + " já no feed="
           + duplicate
+          + " fora do tema="
+          + offTopic
           + " sem sinopse="
           + noSynopsis
           + " importadas="
@@ -198,11 +200,9 @@ public class GoogleNewsCollector {
         continue;
       }
 
-      if (TechFeeds.category(title, "", topic) == null) {
-        stats.otherSite++;
-        markSeen(seen, topic, canonical);
-        continue;
-      }
+      // O Google acha o termo em qualquer parte da página (menus, "leia também"). Só entra se o
+      // título ou a sinopse falarem de tecnologia.
+      String category = TechFeeds.strictCategory(title, topic);
       // A página serve de base para a sinopse; só vira corpo da matéria em host de texto aberto.
       String page = fetcher.pageText(canonical);
       String body =
@@ -214,6 +214,12 @@ public class GoogleNewsCollector {
         stats.noSynopsis++;
         continue;
       }
+      if (category == null) category = TechFeeds.strictCategory(synopsis, topic);
+      if (category == null) {
+        stats.offTopic++;
+        markSeen(seen, topic, canonical);
+        continue;
+      }
       String outlet = parts[1].isBlank() ? link.getHost() : parts[1];
       String id = "rss-" + key.substring(0, 32);
       int readingMinutes = body.isEmpty() ? 1 : Math.max(1, Math.min(120, (body.split("\\s+").length + 199) / 200));
@@ -223,7 +229,7 @@ public class GoogleNewsCollector {
               title,
               List.of(synopsis),
               body,
-              topic,
+              category,
               outlet,
               null,
               now,

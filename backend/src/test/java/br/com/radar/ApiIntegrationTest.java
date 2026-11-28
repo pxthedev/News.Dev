@@ -886,6 +886,38 @@ class ApiIntegrationTest {
   }
 
   @Test
+  void googleNewsCleanupRemovesOnlyOffTopicImports() {
+    String suffix = UUID.randomUUID().toString().substring(0, 8);
+    java.util.function.BiConsumer<String, String> imported =
+        (id, title) -> {
+          var a = article(id, true, "normal", 30);
+          a.put("title", title);
+          a.put("summary", List.of("Resumo sem termos do tema.", " ", " "));
+          a.put("category", "games");
+          contentRepository.save(
+              json.convertValue(a, br.com.radar.content.ContentModels.Article.class));
+          await(
+              db.doc("imports", "test-" + id)
+                  .set(Map.of("articleId", id, "sourceId", "gnews-games", "url", "https://g1.globo.com/" + id)));
+        };
+    String off = "gn-off-" + suffix, on = "gn-on-" + suffix, manual = "gn-manual-" + suffix;
+    imported.accept(off, "Expectativa de vida dos brasileiros chega a quase 77 anos");
+    imported.accept(on, "Nintendo anuncia novo console");
+    var other = article(manual, true, "normal", 30);
+    other.put("title", "Expectativa de vida sobe no país");
+    contentRepository.save(
+        json.convertValue(other, br.com.radar.content.ContentModels.Article.class));
+
+    var cleanup = new br.com.radar.ingestion.GoogleNewsCleanup(db, contentRepository);
+    assertThat(cleanup.clean()).isGreaterThanOrEqualTo(1);
+    assertThat(db.get(db.doc("articles", off)).exists()).isFalse();
+    assertThat(db.get(db.doc("articles", on)).exists()).isTrue();
+    assertThat(db.get(db.doc("articles", manual)).exists()).isTrue(); // sem registro gnews
+    assertThat(db.get(db.doc("imports", "test-" + off)).exists()).isTrue();
+    assertThat(cleanup.clean()).isZero();
+  }
+
+  @Test
   void rssImportsAreDeduplicatedAndRequireEditorialConfirmation() throws Exception {
     var entry = new com.rometools.rome.feed.synd.SyndEntryImpl();
     entry.setTitle("Novidade via RSS");
