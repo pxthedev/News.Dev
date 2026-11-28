@@ -151,7 +151,13 @@ public class ContentRepository {
     if (company != null && !company.isBlank())
       q = q.whereArrayContains("companyKeys", fold(company));
     if (filter.equals("urgent")) q = q.whereIn("urgency", List.of("important", "urgent"));
-    if (!filter.equals("following")) return List.of(q);
+    if (!filter.equals("following")) {
+      // Para você e Urgente mostram só os tópicos que a pessoa segue; sem tópicos, mostra tudo.
+      // A página de um tópico (category) já filtra por ele.
+      if (category == null && !topics.isEmpty())
+        q = q.whereIn("category", topics.stream().distinct().toList());
+      return List.of(q);
+    }
     var u = store.get(store.doc("users", user));
     var follows = u.exists() ? u.get("following") : null;
     List<?> entities = follows instanceof List<?> list ? list : List.of();

@@ -82,8 +82,15 @@ class HttpRepository extends RadarRepository {
   }
 
   @override
-  Future<HomeSummary> home({bool showRumors = false}) async => remember(
-      HomeSummary.fromJson(await _get('/v1/home', {'rumors': showRumors})));
+  Future<HomeSummary> home(
+          {bool showRumors = false,
+          Set<NewsCategory> topics = const {}}) async =>
+      remember(HomeSummary.fromJson(await _get(
+          '/v1/home', {'rumors': showRumors, 'topics': _topics(topics)})));
+
+  /// Tópicos seguidos no formato do servidor (vazio = todos os tópicos).
+  static String _topics(Set<NewsCategory> topics) =>
+      (topics.map((t) => t.slug).toList()..sort()).join(',');
 
   @override
   Future<FeedPage> feed({
@@ -98,6 +105,7 @@ class HttpRepository extends RadarRepository {
         'cursor': cursor,
         'limit': 20,
         'rumors': showRumors,
+        'topics': _topics(topics),
       })));
       if (cursor == null && filter == FeedFilter.forYou) {
         await store.cacheFeed(page.items);
@@ -119,7 +127,12 @@ class HttpRepository extends RadarRepository {
     bool showRumors = false,
   }) async {
     final j = await _get('/v1/feed/new-count',
-        {'since': since, 'filter': filter.slug, 'rumors': showRumors});
+        {
+          'since': since,
+          'filter': filter.slug,
+          'rumors': showRumors,
+          'topics': _topics(topics),
+        });
     return j.integer('count');
   }
 

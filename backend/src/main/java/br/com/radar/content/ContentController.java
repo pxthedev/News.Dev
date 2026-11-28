@@ -35,8 +35,11 @@ public class ContentController {
   }
 
   @GetMapping("/home")
-  Map<String, Object> home(@RequestParam(defaultValue = "false") boolean rumors) {
-    return service.home(rumors);
+  Map<String, Object> home(
+      @AuthenticationPrincipal Jwt jwt,
+      @RequestParam(defaultValue = "false") boolean rumors,
+      @RequestParam(required = false) String topics) {
+    return service.home(rumors, topics(jwt, topics));
   }
 
   @GetMapping("/feed")
@@ -45,16 +48,10 @@ public class ContentController {
       @RequestParam(defaultValue = "for-you") String filter,
       @RequestParam(defaultValue = "false") boolean rumors,
       @RequestParam(required = false) String cursor,
-      @RequestParam(defaultValue = "20") @Min(1) @Max(100) int limit) {
+      @RequestParam(defaultValue = "20") @Min(1) @Max(100) int limit,
+      @RequestParam(required = false) String topics) {
     return repo.feed(
-        jwt.getSubject(),
-        filter,
-        rumors,
-        null,
-        null,
-        cursor,
-        limit,
-        users.topics(jwt.getSubject()));
+        jwt.getSubject(), filter, rumors, null, null, cursor, limit, topics(jwt, topics));
   }
 
   @GetMapping("/feed/new-count")
@@ -62,10 +59,24 @@ public class ContentController {
       @AuthenticationPrincipal Jwt jwt,
       @RequestParam Instant since,
       @RequestParam(defaultValue = "for-you") String filter,
-      @RequestParam(defaultValue = "false") boolean rumors) {
+      @RequestParam(defaultValue = "false") boolean rumors,
+      @RequestParam(required = false) String topics) {
     return Map.of(
-        "count",
-        repo.newCount(jwt.getSubject(), filter, rumors, since, users.topics(jwt.getSubject())));
+        "count", repo.newCount(jwt.getSubject(), filter, rumors, since, topics(jwt, topics)));
+  }
+
+  /**
+   * Tópicos seguidos: os enviados pelo app (que guarda a escolha também para quem não tem conta)
+   * ou, sem o parâmetro, os das preferências salvas. Lista vazia = todos os tópicos.
+   */
+  private List<String> topics(Jwt jwt, String requested) {
+    if (requested != null)
+      return Arrays.stream(requested.split(","))
+          .map(String::strip)
+          .filter(topic -> topic.matches(ContentModels.CATEGORY))
+          .distinct()
+          .toList();
+    return jwt == null ? List.of() : users.topics(jwt.getSubject());
   }
 
   @GetMapping("/articles/{id}")

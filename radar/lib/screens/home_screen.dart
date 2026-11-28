@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import '../l10n/app_copy.dart';
 import 'dart:async';
 
+import 'package:flutter/foundation.dart' show setEquals;
 import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -36,6 +37,9 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _loadingMore = false;
   bool _offline = false;
   int _pendingNew = 0;
+  // Tópicos usados na última carga: se a pessoa seguir ou deixar de seguir um
+  // tópico, o feed recarrega.
+  Set<NewsCategory> _loadedTopics = {};
   Timer? _pollTimer;
   Timer? _bannerTimer;
 
@@ -90,7 +94,8 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _load() async {
     final state = AppScope.read(context);
     final startedAt = DateTime.now();
-    final homeFuture = _loadHome(state.showRumors);
+    _loadedTopics = {...state.topics};
+    final homeFuture = _loadHome(state.showRumors, state.topics);
     try {
       final res = await _repo.feed(
           filter: _filter, topics: state.topics, showRumors: state.showRumors);
@@ -119,9 +124,10 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   /// Sem conexão, mantém o topo que já estava na tela.
-  Future<HomeSummary?> _loadHome(bool showRumors) async {
+  Future<HomeSummary?> _loadHome(
+      bool showRumors, Set<NewsCategory> topics) async {
     try {
-      return await _repo.home(showRumors: showRumors);
+      return await _repo.home(showRumors: showRumors, topics: topics);
     } on RepoException {
       return _home;
     }
@@ -182,6 +188,12 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final state = AppScope.of(context);
+    if (!setEquals(state.topics, _loadedTopics)) {
+      _loadedTopics = {...state.topics};
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _load();
+      });
+    }
     final top = MediaQuery.paddingOf(context).top;
     final wide = MediaQuery.sizeOf(context).width >= 900;
 

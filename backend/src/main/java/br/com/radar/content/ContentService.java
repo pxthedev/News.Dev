@@ -22,8 +22,8 @@ public class ContentService {
     return LocalDate.now(ZONE).atStartOfDay(ZONE).toInstant();
   }
 
-  public Map<String, Object> home(boolean rumors) {
-    String hero = analytics.heroId(rumors);
+  public Map<String, Object> home(boolean rumors, List<String> topics) {
+    String hero = analytics.heroId(rumors, topics);
     var result = new LinkedHashMap<>(analytics.home(rumors));
     result.put("hero", hero == null ? null : repo.find(hero));
     return result;

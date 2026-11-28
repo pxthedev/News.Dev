@@ -466,6 +466,81 @@ class ApiIntegrationTest {
   }
 
   @Test
+  void feedAndHeroShowOnlyFollowedTopics() throws Exception {
+    String suffix = UUID.randomUUID().toString().substring(0, 8);
+    var gamesArticle = article("topic-games-" + suffix, true, "urgent", 5);
+    gamesArticle.put("category", "games");
+    publish(gamesArticle);
+    var iaArticle = article("topic-ia-" + suffix, true, "urgent", 1);
+    iaArticle.put("category", "ia");
+    publish(iaArticle);
+
+    String reader = anonymous().get("token").asText();
+    var prefs =
+        new LinkedHashMap<String, Object>(
+            Map.of(
+                "topics",
+                List.of("games"),
+                "alertLevel",
+                "balanced",
+                "digestTimes",
+                List.of("08:00"),
+                "showRumors",
+                false,
+                "urgentAlerts",
+                true,
+                "followedEntities",
+                List.of()));
+    mvc.perform(
+            put("/v1/me/prefs")
+                .header("Authorization", "Bearer " + reader)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(json.writeValueAsBytes(prefs)))
+        .andExpect(status().isNoContent());
+
+    for (String filter : List.of("for-you", "urgent")) {
+      var page =
+          json.readTree(
+              mvc.perform(
+                      get("/v1/feed?limit=100&filter=" + filter)
+                          .header("Authorization", "Bearer " + reader))
+                  .andExpect(status().isOk())
+                  .andReturn()
+                  .getResponse()
+                  .getContentAsString());
+      assertThat(page.get("items")).isNotEmpty();
+      for (var item : page.get("items"))
+        assertThat(item.get("category").asText()).isEqualTo("games");
+    }
+    mvc.perform(get("/v1/home").header("Authorization", "Bearer " + reader))
+        .andExpect(jsonPath("$.hero.category").value("games"));
+    // A página de um tópico continua mostrando aquele tópico.
+    mvc.perform(get("/v1/topics/ia").header("Authorization", "Bearer " + reader))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.feed.items[0].category").value("ia"));
+
+    // O app envia os tópicos seguidos (também para quem usa sem conta).
+    String guest = anonymous().get("token").asText();
+    mvc.perform(
+            get("/v1/feed?limit=100&topics=ia,invalido").header("Authorization", "Bearer " + guest))
+        .andExpect(jsonPath("$.items[0].category").value("ia"));
+    mvc.perform(get("/v1/home?topics=ia").header("Authorization", "Bearer " + guest))
+        .andExpect(jsonPath("$.hero.category").value("ia"));
+
+    // Quem não segue nenhum tópico vê tudo.
+    String everyone = anonymous().get("token").asText();
+    var all =
+        json.readTree(
+            mvc.perform(get("/v1/feed?limit=100").header("Authorization", "Bearer " + everyone))
+                .andReturn()
+                .getResponse()
+                .getContentAsString());
+    var categories = new java.util.HashSet<String>();
+    for (var item : all.get("items")) categories.add(item.get("category").asText());
+    assertThat(categories).contains("games", "ia");
+  }
+
+  @Test
   void userIsolationPatchSemanticsStatsAndPreferences() throws Exception {
     publish(article("saved", true, "urgent", 10));
     mvc.perform(get("/v1/me/prefs").header("Authorization", "Bearer " + user))

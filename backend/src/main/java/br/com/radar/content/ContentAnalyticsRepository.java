@@ -33,8 +33,10 @@ public class ContentAnalyticsRepository {
             "category", "firstInBrazil", "publishedAt", "trendingTag", "entities", "entityIds"));
   }
 
-  public String heroId(boolean rumors) {
+  /** Destaque da home, entre os tópicos seguidos quando houver. */
+  public String heroId(boolean rumors, List<String> topics) {
     Query recent = content.base(rumors).whereGreaterThanOrEqualTo("publishedAt", time(week()));
+    if (!topics.isEmpty()) recent = recent.whereIn("category", topics.stream().distinct().toList());
     for (String urgency : List.of("urgent", "important", "normal")) {
       var rows =
           store.query(
@@ -45,7 +47,7 @@ public class ContentAnalyticsRepository {
                   .select(new String[0]));
       if (!rows.isEmpty()) return rows.getFirst().getId();
     }
-    var page = content.feed("", "for-you", rumors, null, null, null, 1, List.of());
+    var page = content.feed("", "for-you", rumors, null, null, null, 1, topics);
     return page.items().isEmpty() ? null : page.items().getFirst().id();
   }
 

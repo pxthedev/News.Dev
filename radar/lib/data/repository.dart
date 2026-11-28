@@ -68,10 +68,12 @@ abstract class RadarRepository {
   }
 
   // ---- Leitura
-  Future<HomeSummary> home({bool showRumors = false});
+  /// [topics] = tópicos seguidos; o destaque sai deles (vazio = todos).
+  Future<HomeSummary> home(
+      {bool showRumors = false, Set<NewsCategory> topics = const {}});
 
-  /// [cursor] null = primeira página. [topics] só é usado pelo mock;
-  /// na API o filtro "following" usa os tópicos salvos nas preferências.
+  /// [cursor] null = primeira página. [topics] = tópicos seguidos: "Para você"
+  /// e "Urgente" mostram só esses tópicos (vazio = todos).
   Future<FeedPage> feed({
     String? cursor,
     FeedFilter filter = FeedFilter.forYou,

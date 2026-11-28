@@ -209,13 +209,20 @@ void main() {
             _ => json({}, 404),
           });
 
-      final page = await repo.feed(filter: FeedFilter.urgent);
+      final page = await repo.feed(
+          filter: FeedFilter.urgent,
+          topics: {NewsCategory.ia, NewsCategory.chips});
 
       expect(calls.first.url.path, '/v1/auth/anonymous');
       final feedCall = calls.last;
       expect(feedCall.headers['Authorization'], 'Bearer tok-1');
       expect(feedCall.url.queryParameters,
-          {'filter': 'urgent', 'limit': '20', 'rumors': 'false'});
+          {
+            'filter': 'urgent',
+            'limit': '20',
+            'rumors': 'false',
+            'topics': 'chips,ia',
+          });
       expect(page.items.single.title, contains('fábrica'));
       expect(page.nextCursor, 'abc');
       expect(repo.byId('nvidia-fabrica'), isNotNull);

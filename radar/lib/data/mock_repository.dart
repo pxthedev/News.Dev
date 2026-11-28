@@ -119,16 +119,22 @@ class MockRepository extends RadarRepository {
       FeedFilter filter, Set<NewsCategory> topics, bool showRumors) {
     final list = _visible(showRumors: showRumors);
     return switch (filter) {
-      FeedFilter.forYou => list,
-      FeedFilter.urgent =>
-        list.where((a) => a.urgency != Urgency.normal).toList(),
+      FeedFilter.forYou => topics.isEmpty
+          ? list
+          : list.where((a) => topics.contains(a.category)).toList(),
+      FeedFilter.urgent => list
+          .where((a) =>
+              a.urgency != Urgency.normal &&
+              (topics.isEmpty || topics.contains(a.category)))
+          .toList(),
       FeedFilter.following =>
         list.where((a) => topics.contains(a.category)).toList(),
     };
   }
 
   @override
-  Future<HomeSummary> home({bool showRumors = false}) async {
+  Future<HomeSummary> home(
+      {bool showRumors = false, Set<NewsCategory> topics = const {}}) async {
     await _wait(300);
     return remember(HomeSummary(
       hero: byId(heroId)!,
