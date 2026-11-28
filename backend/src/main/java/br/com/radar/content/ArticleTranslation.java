@@ -169,10 +169,18 @@ public class ArticleTranslation {
     return shortSynopsis(text, ArticleSummarizer.MAX_LENGTH);
   }
 
+  /**
+   * Encurta o texto até {@code max} caracteres. Prefere terminar numa frase inteira; só corta no
+   * meio (com reticências) quando não há fim de frase na segunda metade do limite.
+   */
   public static String shortSynopsis(String text, int max) {
     String plain = text.replaceAll("\\s+", " ").trim();
     if (plain.codePointCount(0, plain.length()) <= max) return plain;
     int end = plain.offsetByCodePoints(0, max - 1);
+    var sentence = java.util.regex.Pattern.compile("[.!?](?=\\s|$)").matcher(plain);
+    int lastSentence = -1;
+    while (sentence.find() && sentence.end() <= end + 1) lastSentence = sentence.end();
+    if (lastSentence >= end / 2) return plain.substring(0, lastSentence);
     int word = plain.lastIndexOf(' ', end);
     return plain.substring(0, word >= end / 2 ? word : end).stripTrailing() + "…";
   }

@@ -17,17 +17,17 @@ public class IngestionService {
   private final PostgresStore store;
   private final RssFetcher fetcher;
   private final ContentRepository articles;
-  private final ArticleSummarizer summarizer;
+  private final ArticleSynopses synopses;
 
   public IngestionService(
       PostgresStore store,
       RssFetcher fetcher,
       ContentRepository articles,
-      ArticleSummarizer summarizer) {
+      ArticleSynopses synopses) {
     this.store = store;
     this.fetcher = fetcher;
     this.articles = articles;
-    this.summarizer = summarizer;
+    this.synopses = synopses;
   }
 
   public record SourceConfig(
@@ -171,13 +171,19 @@ public class IngestionService {
               && sourceId.equals(previous.getString("sourceId"))
               && articles.bodyMissing(id)) {
             articles.fillImportedBody(
-                id, fullText, readingMinutes, summarizer.summarize(title, fullText).orElse(null));
+                id,
+                fullText,
+                readingMinutes,
+                synopses.write(title, fullText, "", canonical, excerpt).orElse(null));
           }
           continue;
         }
 
-        // Sinopse = resumo real do texto completo; o trecho do feed fica só como fallback.
-        String generated = synopsis(title, fullText, excerpt).orElse(null);
+        // Sinopse = resumo real da matéria; o trecho do feed fica só como fallback.
+        String generated =
+            synopses
+                .write(title, fullText, ArticleSynopses.encoded(entry), canonical, excerpt)
+                .orElse(null);
         String summary =
             generated != null
                 ? generated
@@ -240,7 +246,10 @@ public class IngestionService {
                           time(Instant.now())));
                   return true;
                 });
-        if (saved) inserted++;
+        if (saved) {
+          inserted++;
+          if (generated != null) articles.markSynopsisGenerated(id);
+        }
       }
       await(
           ref.update(map("lastSuccessAt", time(Instant.now()), "lastError", FieldValue.delete())));
@@ -254,13 +263,6 @@ public class IngestionService {
       await(ref.update("leaseUntil", time(Instant.EPOCH)));
     }
     return Map.of("imported", inserted);
-  }
-
-  /** Resume o texto completo; sem ele, só resume trechos longos o bastante para ter fatos. */
-  private Optional<String> synopsis(String title, String fullText, String excerpt) {
-    if (!fullText.isBlank()) return summarizer.summarize(title, fullText);
-    if (excerpt.length() >= 600) return summarizer.summarize(title, excerpt);
-    return Optional.empty();
   }
 
   private static String fullText(SyndEntry entry, String excerpt) {

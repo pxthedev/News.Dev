@@ -102,6 +102,7 @@ class ApiIntegrationTest {
     publish(unrelated);
     var excerpt = article("titulo-sem-texto", true, "urgent", 10);
     excerpt.put("body", " ");
+    excerpt.put("summary", List.of(" ", " ", " ")); // sem texto e sem sinopse: fica fora
     contentRepository.save(
         json.convertValue(excerpt, br.com.radar.content.ContentModels.Article.class));
     mvc.perform(get("/v1/feed?limit=1").header("Authorization", "Bearer " + user))
@@ -984,7 +985,7 @@ class ApiIntegrationTest {
   }
 
   @Test
-  void existingEmailNeedsExplicitVerifiedSocialLink() throws Exception {
+  void verifiedSocialIdentityLinksToExistingEmailAccount() throws Exception {
     String email = UUID.randomUUID() + "@radar.test";
     var registered =
         postJson(
@@ -996,7 +997,8 @@ class ApiIntegrationTest {
         new br.com.radar.auth.SupabaseIdentityVerifier.Identity(
             UUID.randomUUID().toString(), email, "Ana");
     org.mockito.Mockito.when(verifier.verify("apple-verified")).thenReturn(identity);
-    postJson("/v1/auth/supabase", Map.of("accessToken", "apple-verified"), 409);
+    var first = postJson("/v1/auth/supabase", Map.of("accessToken", "apple-verified"), 200);
+    assertThat(id(first.get("token").asText())).isEqualTo(id(account));
     mvc.perform(
             post("/v1/auth/link/supabase")
                 .header("Authorization", "Bearer " + account)

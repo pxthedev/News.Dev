@@ -1,6 +1,11 @@
 spring:
   application:
     name: fionova-api
+  task:
+    scheduling:
+      # Coleta RSS, sinopses e Google News rodam em paralelo; com 1 thread uma trava as outras.
+      pool:
+        size: ${SCHEDULER_THREADS:4}
   datasource:
     url: ${SUPABASE_DB_URL:jdbc:postgresql://localhost:5432/postgres}
     username: ${SUPABASE_DB_USER:postgres}
@@ -80,6 +85,15 @@ radar:
     tech-feeds-enabled: ${TECH_FEEDS_ENABLED:false}
     licensed-feeds-enabled: ${TECH_LICENSED_FEEDS_ENABLED:false}
     delay-ms: ${INGESTION_DELAY_MS:900000}
+    google-news:
+      # Busca por tópico no Google News (RSS de busca, sem chave). Desligado por padrão.
+      # Segue a coleta do catálogo se GOOGLE_NEWS_ENABLED não for definido.
+      enabled: ${GOOGLE_NEWS_ENABLED:${radar.ingestion.tech-feeds-enabled:false}}
+      delay-ms: ${GOOGLE_NEWS_DELAY_MS:1800000}
+      per-topic: ${GOOGLE_NEWS_PER_TOPIC:8}
+      # Sites buscados (só sinopse + link). Texto completo só nos full-text-hosts.
+      sites: ${GOOGLE_NEWS_SITES:g1.globo.com,agenciabrasil.ebc.com.br,cnnbrasil.com.br,r7.com,band.com.br,sbt.com.br,tvcultura.com.br}
+      full-text-hosts: ${GOOGLE_NEWS_FULLTEXT_HOSTS:agenciabrasil.ebc.com.br}
   security:
     secret: ${JWT_SECRET}
     issuer: radar-api

@@ -1,0 +1,125 @@
+package br.com.radar.ingestion;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+import br.com.radar.content.ContentModels;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.ByteArrayOutputStream;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
+import java.util.List;
+import org.junit.jupiter.api.Test;
+
+class GoogleNewsTest {
+  private final GoogleNewsLinks links = new GoogleNewsLinks(new ObjectMapper());
+
+  @Test
+  void hasAQueryForEveryTopicOfTheApp() {
+    assertThat(GoogleNewsTopics.QUERIES.keySet())
+        .containsExactlyInAnyOrder(ContentModels.CATEGORY.split("\\|"));
+  }
+
+  @Test
+  void buildsAPortugueseSearchRestrictedToTheOpenHosts() {
+    String url =
+        GoogleNewsTopics.searchUrl("chips", List.of("agenciabrasil.ebc.com.br", "x.gov.br"), 2);
+    assertThat(url)
+        .startsWith("https://news.google.com/rss/search?q=")
+        .endsWith("&hl=pt-BR&gl=BR&ceid=BR:pt-419");
+    String query = URLDecoder.decode(url.split("q=")[1].split("&")[0], StandardCharsets.UTF_8);
+    assertThat(query)
+        .contains("semicondutores OR chips")
+        .contains("(site:agenciabrasil.ebc.com.br OR site:x.gov.br)")
+        .endsWith(" when:2d");
+  }
+
+  @Test
+  void splitsThePublisherSuffixFromTheTitle() {
+    assertThat(GoogleNewsTopics.splitTitle("Governo lança plano de IA - Agência Brasil"))
+        .containsExactly("Governo lança plano de IA", "Agência Brasil");
+    assertThat(GoogleNewsTopics.splitTitle("Título sem veículo")).containsExactly("Título sem veículo", "");
+  }
+
+  @Test
+  void readsTheArticleIdOnlyFromGoogleNewsLinks() {
+    assertThat(GoogleNewsLinks.articleId("https://news.google.com/rss/articles/CBMiABC_-1?oc=5"))
+        .contains("CBMiABC_-1");
+    assertThat(GoogleNewsLinks.articleId("https://evil.example/rss/articles/CBMi")).isEmpty();
+    assertThat(GoogleNewsLinks.articleId("http://news.google.com/rss/articles/CBMi")).isEmpty();
+  }
+
+  @Test
+  void decodesLegacyBase64Links() {
+    String target = "https://agenciabrasil.ebc.com.br/geral/noticia/2026-11/teste";
+    var bytes = new ByteArrayOutputStream();
+    bytes.write(0x08);
+    bytes.write(0x13);
+    bytes.write(0x22);
+    bytes.write(target.length());
+    bytes.writeBytes(target.getBytes(StandardCharsets.UTF_8));
+    bytes.write(0xd2);
+    String id = Base64.getUrlEncoder().withoutPadding().encodeToString(bytes.toByteArray());
+    assertThat(GoogleNewsLinks.legacy(id)).contains(target);
+    assertThat(GoogleNewsLinks.legacy("AU_yqLNotLegacy")).isEmpty();
+  }
+
+  @Test
+  void buildsTheBatchRequestAndReadsTheDecodedUrl() throws Exception {
+    var mapper = new ObjectMapper();
+    var request = mapper.readTree(links.request("CBMiXYZ", 1764000000L, "sig123"));
+    var rpc = request.path(0).path(0);
+    assertThat(rpc.path(0).asText()).isEqualTo("Fbv4je");
+    var inner = mapper.readTree(rpc.path(1).asText());
+    assertThat(inner.path(0).asText()).isEqualTo("garturlreq");
+    assertThat(inner.path(2).asText()).isEqualTo("CBMiXYZ");
+    assertThat(inner.path(3).asLong()).isEqualTo(1764000000L);
+    assertThat(inner.path(4).asText()).isEqualTo("sig123");
+
+    String body =
+        ")]}'\n\n123\n[[\"wrb.fr\",\"Fbv4je\",\"[\\\"garturlres\\\",\\\"https://agenciabrasil.ebc.com.br/x\\\",1]\",null,null,null,\"generic\"]]\n58\n[[\"di\",10]]";
+    assertThat(links.decodedUrl(body)).contains("https://agenciabrasil.ebc.com.br/x");
+    assertThat(links.decodedUrl(")]}'\n[[\"er\",null]]")).isEmpty();
+  }
+
+  @Test
+  void keepsOnlyFullOwnStoriesAsBody() {
+    String paragraph = "Texto da reportagem sobre tecnologia no Brasil. ".repeat(3).trim();
+    String story = String.join("\n\n", paragraph, paragraph, paragraph);
+    assertThat(GoogleNewsCollector.openBody(story)).isTrue();
+    assertThat(GoogleNewsCollector.openBody(paragraph)).isFalse();
+    assertThat(GoogleNewsCollector.openBody(story + "\n\n*Com informações da Reuters")).isFalse();
+  }
+
+  @Test
+  void parsesTheGoogleNewsRssShape() throws Exception {
+    String xml =
+        """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <rss version="2.0"><channel><title>t</title><link>https://news.google.com</link>
+        <description>d</description>
+        <item><title>Brasil amplia 5G - Agência Brasil</title>
+        <link>https://news.google.com/rss/articles/CBMiABC?oc=5</link>
+        <pubDate>Thu, 26 Nov 2026 12:00:00 GMT</pubDate>
+        <source url="https://agenciabrasil.ebc.com.br">Agência Brasil</source></item>
+        </channel></rss>
+        """;
+    var entries = RssFetcher.parse(xml.strip().getBytes(StandardCharsets.UTF_8));
+    assertThat(entries).hasSize(1);
+    assertThat(GoogleNewsLinks.articleId(entries.getFirst().getLink())).contains("CBMiABC");
+    assertThat(GoogleNewsTopics.splitTitle(entries.getFirst().getTitle())[1])
+        .isEqualTo("Agência Brasil");
+    assertThat(entries.getFirst().getPublishedDate()).isNotNull();
+  }
+
+  @org.junit.jupiter.api.Test
+  void onlyConfiguredSitesAndSubdomains() {
+    var sites = java.util.Set.of("g1.globo.com", "r7.com");
+    org.junit.jupiter.api.Assertions.assertTrue(GoogleNewsCollector.onSite("g1.globo.com", sites));
+    org.junit.jupiter.api.Assertions.assertTrue(GoogleNewsCollector.onSite("Noticias.R7.com", sites));
+    org.junit.jupiter.api.Assertions.assertFalse(GoogleNewsCollector.onSite("globo.com", sites));
+    org.junit.jupiter.api.Assertions.assertFalse(
+        GoogleNewsCollector.onSite("g1.globo.com.evil.io", sites));
+    org.junit.jupiter.api.Assertions.assertFalse(GoogleNewsCollector.onSite("notr7.com", sites));
+  }
+}

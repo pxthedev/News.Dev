@@ -182,12 +182,15 @@ public class IdentityRepository {
           }
           var emailRef = store.doc("emails", hash(email));
           var existing = await(tx.get(emailRef));
+          if (existing.exists()) {
+            // O verificador só aceita email confirmado pelo provedor (Google/Apple), então o
+            // dono do email é o mesmo da conta existente: vincula o acesso a ela.
+            var u = await(tx.get(userRef(existing.getString("userId"))));
+            require(u);
+            tx.set(provider, Map.of("userId", u.getId()));
+            return u.getId();
+          }
           var anon = anonymous == null ? null : await(tx.get(userRef(anonymous)));
-          if (existing.exists())
-            throw new ApiException(
-                org.springframework.http.HttpStatus.CONFLICT,
-                "account_link_required",
-                "Entre com sua senha antes de vincular o login social.");
           String id =
               anon != null && anon.exists() && anon.getString("email") == null
                   ? anonymous

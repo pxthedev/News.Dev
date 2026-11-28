@@ -38,6 +38,16 @@ public class IngestionScheduler {
 
   @Scheduled(fixedDelayString = "${radar.ingestion.delay-ms}")
   public void run() {
+    long started = System.nanoTime();
+    LOG.info("Coleta RSS: rodada iniciada");
+    try {
+      collectAll();
+    } finally {
+      LOG.info("Coleta RSS: rodada concluída em {}s", (System.nanoTime() - started) / 1_000_000_000);
+    }
+  }
+
+  private void collectAll() {
     if (catalogEnabled) {
       for (var feed : TechFeeds.catalog(licensedFeeds)) {
         if (BrazilianPublishers.contains(feed.url()) || feed.id().equals("rss-cnn-brasil"))

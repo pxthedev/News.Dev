@@ -450,9 +450,16 @@ public class PostgresStore {
       return q;
     }
 
-    public Query whereArticleHasBody() {
+    /**
+     * Matéria com texto completo ou, se confirmada, ao menos uma sinopse para exibir com o link da
+     * fonte. Importação ainda em revisão editorial sem texto continua fora.
+     */
+    public Query whereArticleHasBodyOrSynopsis() {
       var q = new Query(this);
-      q.predicates.add("((data->>'payload')::jsonb ->> 'body') ~ '[^[:space:]]'");
+      q.predicates.add(
+          "(((data->>'payload')::jsonb ->> 'body') ~ '[^[:space:]]'"
+              + " or (((data->>'payload')::jsonb ->> 'confirmed') = 'true'"
+              + " and ((data->>'payload')::jsonb #>> '{summary,0}') ~ '[^[:space:]]'))");
       return q;
     }
 

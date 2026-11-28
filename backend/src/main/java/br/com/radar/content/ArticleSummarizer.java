@@ -34,11 +34,15 @@ public class ArticleSummarizer {
       um resumo real e específico do que aconteceu, em português do Brasil.
 
       Regras:
-      - 2 ou 3 frases, entre 250 e 420 caracteres no total.
-      - Diga o fato principal logo na primeira frase: quem fez o quê, quando e onde.
-      - Inclua os dados concretos mais relevantes da matéria (números, valores, datas, nomes de
-        empresas, pessoas, produtos, órgãos) e a consequência ou próximo passo, se houver.
-      - Use apenas informações presentes no texto. Não invente, não opine, não especule.
+      - Exatamente 3 frases completas, entre 320 e 440 caracteres no total. Nunca passe de 460.
+      - 1ª frase: o fato principal — quem fez o quê, quando e onde.
+      - 2ª frase: os detalhes concretos mais importantes (números, valores, datas, nomes de
+        empresas, pessoas, produtos, órgãos, motivo).
+      - 3ª frase: a consequência, o contexto ou o próximo passo.
+      - Cada frase deve fazer sentido sozinha e terminar com ponto final. Nada de frases cortadas
+        ou reticências.
+      - Use apenas informações presentes no texto. Não invente, não opine, não especule. Se o
+        texto for curto demais para 3 frases, escreva 2 frases completas em vez de inventar.
       - Não repita o título palavra por palavra e não comece com "A matéria", "O texto" ou
         "Nesta notícia".
       - Sem marcadores, sem aspas longas, sem emojis, sem chamadas como "saiba mais".

@@ -49,10 +49,63 @@ public class ContentRepository {
           if (synopsis != null && !synopsis.isBlank()) {
             var summary = payload.putArray("summary");
             summary.add(synopsis);
+            tx.update(ref, "synopsisAt", time(Instant.now()));
           }
           tx.update(ref, "payload", json.write(payload));
           return null;
         });
+  }
+
+  public void markSynopsisGenerated(String id) {
+    await(store.doc("articles", id).update("synopsisAt", time(Instant.now())));
+  }
+
+  /** Troca o primeiro ponto do resumo pela sinopse gerada e marca a matéria como resumida. */
+  public void replaceSynopsis(String id, String synopsis) {
+    var ref = store.doc("articles", id);
+    store.transaction(
+        tx -> {
+          var doc = await(tx.get(ref));
+          if (!doc.exists()) return null;
+          var payload = json.read(doc.getString("payload"), ObjectNode.class);
+          var current = payload.path("summary");
+          var summary = payload.putArray("summary");
+          summary.add(synopsis);
+          for (int i = 1; i < current.size(); i++) summary.add(current.get(i));
+          tx.update(ref, "payload", json.write(payload));
+          tx.update(ref, "synopsisAt", time(Instant.now()));
+          return null;
+        });
+  }
+
+  public void markSynopsisTried(String id) {
+    await(store.doc("articles", id).update("synopsisTriedAt", time(Instant.now())));
+  }
+
+  /**
+   * Matérias importadas por RSS nos últimos dias que ainda não têm sinopse gerada, das mais novas
+   * para as mais antigas. Tentativas que falharam só voltam depois de {@code retryAfter}.
+   */
+  public List<Article> synopsisBacklog(int limit, Duration maxAge, Duration retryAfter) {
+    var now = Instant.now();
+    return store
+        .query(
+            store
+                .collection("articles")
+                .whereEqualTo("synopsisAt", null)
+                .whereGreaterThan("publishedAt", time(now.minus(maxAge)))
+                .orderBy("publishedAt", Query.Direction.DESCENDING)
+                .limit(limit * 4))
+        .stream()
+        .filter(doc -> doc.getId().startsWith("rss-"))
+        .filter(
+            doc -> {
+              var tried = doc.getInstant("synopsisTriedAt");
+              return tried == null || instant(tried).isBefore(now.minus(retryAfter));
+            })
+        .limit(limit)
+        .map(this::decode)
+        .toList();
   }
 
   public List<Article> byIds(List<String> ids) {
@@ -74,7 +127,7 @@ public class ContentRepository {
         store
             .collection("articles")
             .wherePrimaryArticleSourceMatches(BrazilianPublishers.URL_PATTERN)
-            .whereArticleHasBody()
+            .whereArticleHasBodyOrSynopsis()
             .whereLessThanOrEqualTo("publishedAt", time(Instant.now()));
     return rumors ? q : q.whereEqualTo("confirmed", true);
   }
