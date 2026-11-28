@@ -14,6 +14,7 @@ import '../widgets/primitives.dart';
 import '../l10n/app_copy.dart';
 import '../widgets/article_comments.dart';
 import 'full_article_screen.dart';
+import 'publisher_reader_screen.dart';
 
 /// 06 · Matéria
 class ArticleScreen extends StatefulWidget {
@@ -185,14 +186,15 @@ class _ArticleScreenState extends State<ArticleScreen> {
             article.sources.length == 1
         ? article.sources.single
         : null;
-    // Primeiro link válido da matéria, para ler no site do veículo.
+    // Primeiro link válido da matéria, para ler a página do veículo no app.
     final readOn = article.sources
-        .map((source) => Uri.tryParse(source.url))
-        .where((url) =>
-            url != null &&
-            (url.scheme == 'https' || url.scheme == 'http') &&
-            url.host.isNotEmpty &&
-            url.userInfo.isEmpty)
+        .map((source) => (source.name, Uri.tryParse(source.url)))
+        .where((pair) =>
+            pair.$2 != null &&
+            (pair.$2!.scheme == 'https' || pair.$2!.scheme == 'http') &&
+            pair.$2!.host.isNotEmpty &&
+            pair.$2!.userInfo.isEmpty)
+        .map((pair) => (name: pair.$1, url: pair.$2!))
         .firstOrNull;
     final gutter = math.max(
       RSpace.screen,
@@ -334,18 +336,15 @@ class _ArticleScreenState extends State<ArticleScreen> {
                   Text(context.tr('Carregando o texto…'),
                       style: RText.footnote.withColor(RColors.textSecondary)),
                 ] else if (paragraphs.isEmpty && readOn != null) ...[
-                  // Veículo sem licença de texto aberto: o app mostra a sinopse e
-                  // leva a matéria completa para o site de quem a publicou.
+                  // Veículo sem licença de texto aberto: a matéria completa abre
+                  // na página de quem a publicou, dentro do app.
                   const SizedBox(height: 16),
                   RButton(
                     context.tr('Ler matéria completa'),
-                    icon: Icons.open_in_new,
-                    onPressed: () => _openReadingLink(readOn),
+                    icon: Icons.arrow_forward,
+                    onPressed: () => PublisherReaderScreen.open(
+                        context, readOn.url, readOn.name),
                   ),
-                ] else if (paragraphs.isEmpty) ...[
-                  const SizedBox(height: 12),
-                  Text(context.tr('O texto completo não está disponível no app.'),
-                      style: RText.footnote.withColor(RColors.textSecondary)),
                 ],
                 if (article.sources.isNotEmpty) ...[
                   const SizedBox(height: 16),

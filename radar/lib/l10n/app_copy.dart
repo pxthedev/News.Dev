@@ -179,6 +179,7 @@ const _translations = <String, (String, String)>{
     'Traducción no disponible. Se muestra el original.',
   ),
   'Tentar de novo': ('Try again', 'Intentar de nuevo'),
+  'Abrir no navegador': ('Open in browser', 'Abrir en el navegador'),
   'Ler depois': ('Read later', 'Leer más tarde'),
   'Lidos': ('Read', 'Leídos'),
   'Alertas': ('Alerts', 'Alertas'),

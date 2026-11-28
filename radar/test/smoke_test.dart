@@ -105,9 +105,8 @@ void main() {
 
     unawaited(Routes.openArticle('rss-preview'));
     await tester.pumpAndSettle();
-    // Sem texto aberto: o botão leva a matéria completa para o site do veículo.
+    // Sem texto aberto: o botão abre a página do veículo dentro do app.
     expect(find.text('Ler matéria completa'), findsOneWidget);
-    expect(find.byIcon(Icons.open_in_new), findsOneWidget);
     expect(find.text('O texto completo não está disponível no app.'),
         findsNothing);
     expect(find.text('Fontes'), findsOneWidget);
