@@ -185,6 +185,15 @@ class _ArticleScreenState extends State<ArticleScreen> {
             article.sources.length == 1
         ? article.sources.single
         : null;
+    // Primeiro link válido da matéria, para ler no site do veículo.
+    final readOn = article.sources
+        .map((source) => Uri.tryParse(source.url))
+        .where((url) =>
+            url != null &&
+            (url.scheme == 'https' || url.scheme == 'http') &&
+            url.host.isNotEmpty &&
+            url.userInfo.isEmpty)
+        .firstOrNull;
     final gutter = math.max(
       RSpace.screen,
       (MediaQuery.sizeOf(context).width - 744) / 2,
@@ -320,12 +329,22 @@ class _ArticleScreenState extends State<ArticleScreen> {
                     ),
                   ),
                 ],
-                if (paragraphs.isEmpty) ...[
+                if (paragraphs.isEmpty && _fetching) ...[
                   const SizedBox(height: 12),
-                  Text(
-                      context.tr(_fetching
-                          ? 'Carregando o texto…'
-                          : 'O texto completo não está disponível no app.'),
+                  Text(context.tr('Carregando o texto…'),
+                      style: RText.footnote.withColor(RColors.textSecondary)),
+                ] else if (paragraphs.isEmpty && readOn != null) ...[
+                  // Veículo sem licença de texto aberto: o app mostra a sinopse e
+                  // leva a matéria completa para o site de quem a publicou.
+                  const SizedBox(height: 16),
+                  RButton(
+                    context.tr('Ler matéria completa'),
+                    icon: Icons.open_in_new,
+                    onPressed: () => _openReadingLink(readOn),
+                  ),
+                ] else if (paragraphs.isEmpty) ...[
+                  const SizedBox(height: 12),
+                  Text(context.tr('O texto completo não está disponível no app.'),
                       style: RText.footnote.withColor(RColors.textSecondary)),
                 ],
                 if (article.sources.isNotEmpty) ...[

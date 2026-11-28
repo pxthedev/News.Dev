@@ -105,9 +105,11 @@ void main() {
 
     unawaited(Routes.openArticle('rss-preview'));
     await tester.pumpAndSettle();
-    expect(find.text('Ler matéria completa'), findsNothing);
+    // Sem texto aberto: o botão leva a matéria completa para o site do veículo.
+    expect(find.text('Ler matéria completa'), findsOneWidget);
+    expect(find.byIcon(Icons.open_in_new), findsOneWidget);
     expect(find.text('O texto completo não está disponível no app.'),
-        findsOneWidget);
+        findsNothing);
     expect(find.text('Fontes'), findsOneWidget);
 
     // Desmonta pra cancelar timers (polling de notícias novas, toasts).
