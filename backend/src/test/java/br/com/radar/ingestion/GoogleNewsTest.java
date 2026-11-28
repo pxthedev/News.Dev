@@ -142,7 +142,7 @@ class GoogleNewsTest {
   void techHeadlinesRemovedByTheFirstCleanupNowMatch() {
     var cases =
         java.util.Map.of(
-            "PL das Big Techs: relator altera texto e espera votar nesta terça", "bigtech",
+            "PL das Big Techs: relator altera texto e espera votar nesta terça", "regulacao",
             "Europa planeja fundo de € 50 bilhões para impulsionar tecnologia quântica", "chips",
             "Abin apresenta estratégia para criptografia pós-quântica", "seguranca",
             "Estação espacial chinesa recebe o primeiro astronauta estrangeiro", "espaco",
@@ -161,5 +161,50 @@ class GoogleNewsTest {
             "Celular explode dentro do bolso de empresário no meio do trânsito",
             "Superlua: veja quando e como observar fenômeno em Goiás"))
       org.junit.jupiter.api.Assertions.assertNull(TechFeeds.strictCategory(title, "nenhum"), title);
+  }
+
+  @org.junit.jupiter.api.Test
+  void titleOnlyRulesSkipAmbiguousPortugueseWords() {
+    for (String title :
+        java.util.List.of(
+            "Cachorro aprende a reconhecer sinais de libras para se comunicar com tutora",
+            "No 9º mês de gestação, Sabrina Sato desfila pela Vila Isabel",
+            "Burning Fest tem shows de rock, churrasco e entrada gratuita em Cubatão; veja a programação",
+            "Dia D de vacinação contra a raiva para cães e gatos ocorre neste sábado",
+            "Dor nas costas é sinal de abdômen fraco? Estudo questiona explicação comum",
+            "Ele ia para o trabalho quando foi assaltado",
+            "Governo cumpre a meta fiscal do ano",
+            "Momento fofo! Ana Hickmann decora casa para fim de ano com auxílio de pets",
+            "Suspeito é investigado por furtar R$ 7 mil em produtos de casa em Boa Vista"))
+      org.junit.jupiter.api.Assertions.assertNull(
+          TechFeeds.strictCategory(title, "bigtech"), title);
+    var kept =
+        java.util.Map.of(
+            "Google prepara novos recursos para aproximar o Modo IA do buscador ao Gemini", "ia",
+            "Nas escolas, 1 em cada 8 meninos admite ter criado nudes com IA", "ia",
+            "EUA autorizam SpaceX a lançar 1 milhão de satélites", "espaco",
+            "Data centers gigantes invadem bairros residenciais no Japão", "tech-br",
+            "Robôs do tamanho de um grão de arroz podem levar medicamentos ao coração", "tech-br",
+            "Livro revisita a história da Nintendo", "games",
+            "Giro Internacional: hackers invadem sistema da Força Aérea dos EUA", "seguranca");
+    kept.forEach(
+        (title, category) ->
+            org.junit.jupiter.api.Assertions.assertEquals(
+                category, TechFeeds.strictCategory(title, "nenhum"), title));
+  }
+
+  @org.junit.jupiter.api.Test
+  void sponsoredAndVideoRoundupPagesAreSkipped() {
+    org.junit.jupiter.api.Assertions.assertTrue(
+        GoogleNewsCollector.offTopicPage(
+            "https://g1.globo.com/especial-publicitario/totvs/noticia/2026/11/x.ghtml", "CORTEN"));
+    org.junit.jupiter.api.Assertions.assertTrue(
+        GoogleNewsCollector.offTopicPage(
+            "https://g1.globo.com/ba/bahia/edicao/2026/11/27/videos.ghtml",
+            "Vídeos do g1 e TV Bahia - sexta-feira"));
+    org.junit.jupiter.api.Assertions.assertFalse(
+        GoogleNewsCollector.offTopicPage(
+            "https://g1.globo.com/tecnologia/noticia/2026/11/28/data-centers.ghtml",
+            "Data centers gigantes invadem bairros"));
   }
 }

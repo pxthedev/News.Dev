@@ -127,15 +127,6 @@ final class TechFeeds {
               "bigtech",
               "apple|google|microsoft|meta|amazon web services|tiktok|instagram|whatsapp|youtube|big techs?|software|social media|redes sociais|cloud computing|computacao em nuvem"));
 
-  /**
-   * Tecnologia em geral, só para a checagem estrita do Google News: sem isso o tópico tech-br não
-   * teria regra própria. Fica fora de RULES para não mudar a categoria das matérias do RSS.
-   */
-  private static final Rule TECH_BR =
-      new Rule(
-          "tech-br",
-          "tecnologia[s]?|tecnologic[ao]s?|inovacao tecnologica|anatel|5g|telecomunicac(?:ao|oes)|ministerio da ciencia");
-
   private static final Pattern PROMOTION =
       Pattern.compile(
           "\\b(?:sponsored content|partner content|conteudo patrocinado|publicidade|publieditorial|black friday|cyber monday)\\b");
@@ -159,19 +150,85 @@ final class TechFeeds {
   }
 
   /**
-   * Categoria pelas regras de tecnologia, sem cair no tópico padrão: null quando o texto não fala
-   * de tecnologia. Se o tópico preferido também bater, ele vence.
+   * Regras da checagem estrita do Google News, aplicadas só ao título. Mais exigentes que RULES:
+   * ficam de fora palavras que em português têm outro sentido ("ia" do verbo ir, "programação" de
+   * evento, "meta" de objetivo) e termos que aparecem em qualquer notícia ("redes sociais"). IA em
+   * maiúsculas é tratada à parte, antes de baixar a caixa.
    */
-  static String strictCategory(String text, String preferred) {
-    String normalized = normalize(text == null ? "" : text);
+  private static final List<Rule> STRICT =
+      List.of(
+          new Rule(
+              "seguranca",
+              "cybersecurity|ransomware|malware|phishing|data breach|vulnerabilit(?:y|ies)"
+                  + "|vulnerabilidade[s]?|vazamento de dados|ciberseguranca|ciberataque[s]?"
+                  + "|ataque[s]? hacker[s]?|hacker[s]?|spyware|criptografia|golpe[s]? digita(?:l|is)"
+                  + "|golpe[s]? (?:online|virtual|virtuais|pela internet|no whatsapp|via whatsapp)"),
+          new Rule(
+              "ia",
+              "llm[s]?|chatgpt|openai|anthropic|gemini|copilot|midjourney|deepseek|deepfake[s]?"
+                  + "|artificial intelligence|inteligencia[s]? artificia(?:l|is)|machine learning"
+                  + "|aprendizado de maquina"),
+          new Rule(
+              "chips",
+              "chip[s]?|chipset[s]?|semiconductor[s]?|semicondutor(?:es)?|gpu[s]?|cpu[s]?"
+                  + "|processador(?:es)?|nvidia|tsmc|qualcomm|intel|amd|computacao quantica"
+                  + "|computador(?:es)? quantico[s]?|tecnologia quantica|pos-quantica|huawei"),
+          new Rule(
+              "regulacao",
+              "antitrust|antitruste|lgpd|anpd|data protection|digital markets act|regulacao digital"
+                  + "|regulamentacao da ia|regulacao da ia|marco civil da internet"
+                  + "|(?:regulacao|regulamentacao|pl) das big techs|pl das fake news"),
+          new Rule(
+              "espaco",
+              "spacex|nasa|starship|foguete[s]?|satellite[s]?|satelite[s]?|estacao espacial"
+                  + "|astronauta[s]?|missao espacial|agencia espacial|telescopio[s]?|asteroide[s]?"),
+          new Rule("cripto", "bitcoin|crypto|criptomoeda[s]?|criptoativo[s]?|ethereum|blockchain"),
+          new Rule(
+              "games",
+              "gaming|games?|video games?|videogame[s]?|jogos eletronicos|esports?|e-sports?"
+                  + "|playstation|xbox|nintendo|steam|gta"),
+          new Rule(
+              "dados",
+              "sql|power bi|bigquery|snowflake|analista(?:s)? de dados|analise de dados"
+                  + "|engenharia de dados|ciencia de dados|data analytics|data science"
+                  + "|business intelligence"),
+          new Rule(
+              "programacao",
+              "linguagem de programacao|programador(?:es|a|as)?|desenvolvedor(?:es|a|as)? de software"
+                  + "|programming|github|javascript|typescript|python|open source|codigo aberto"
+                  + "|kubernetes"),
+          new Rule(
+              "gadgets",
+              "smartphone[s]?|iphone[s]?|android|pixel|galaxy|laptop[s]?|notebook[s]?|smartwatch"
+                  + "|wearables|tablet[s]?|ipad|macbook"),
+          new Rule("startups", "startup[s]?|venture capital|unicornio[s]?|rodada de investimento"),
+          new Rule(
+              "bigtech",
+              "apple|google|microsoft|meta platforms|zuckerberg|amazon|aws|tiktok|bytedance"
+                  + "|instagram|whatsapp|youtube|big techs?|samsung|netflix|spotify|elon musk"),
+          new Rule(
+              "tech-br",
+              "tecnologia[s]?|tecnologic[ao]s?|inovacao tecnologica|anatel|5g"
+                  + "|telecomunicac(?:ao|oes)|ministerio da ciencia|robo[s]?|robotica"
+                  + "|data centers?|software[s]?|computacao em nuvem|cloud computing"));
+
+  private static final Pattern UPPERCASE_IA = Pattern.compile("\\bIAs?\\b");
+
+  /**
+   * Categoria do título pelas regras estritas, sem cair no tópico padrão: null quando o título não
+   * fala de tecnologia. Se o tópico preferido também bater, ele vence.
+   */
+  static String strictCategory(String title, String preferred) {
+    String raw = title == null ? "" : title;
+    String normalized = normalize(raw);
     if (PROMOTION.matcher(normalized).find()) return null;
-    String first = null;
-    for (Rule rule : RULES) {
+    String first = UPPERCASE_IA.matcher(raw).find() ? "ia" : null;
+    if ("ia".equals(first) && "ia".equals(preferred)) return preferred;
+    for (Rule rule : STRICT) {
       if (!rule.pattern().matcher(normalized).find()) continue;
       if (rule.category().equals(preferred)) return preferred;
       if (first == null) first = rule.category();
     }
-    if (first == null && TECH_BR.pattern().matcher(normalized).find()) return TECH_BR.category();
     return first;
   }
 

@@ -10,8 +10,9 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 /**
- * Remove as matérias que o Google News importou antes do filtro de tema: título e sinopse sem
- * nenhum termo de tecnologia (ex.: "Expectativa de vida dos brasileiros" como games).
+ * Remove as matérias que o Google News importou antes do filtro de tema atual: título sem nenhum
+ * termo de tecnologia (ex.: "Expectativa de vida dos brasileiros" como games), patrocinados e
+ * resumos de vídeo. Usa as mesmas regras do coletor.
  *
  * <p>Só olha matérias com registro de importação gnews-*. O registro fica, para a matéria não ser
  * importada de novo. Roda uma vez, um minuto após o boot; é idempotente.
@@ -50,9 +51,9 @@ public class GoogleNewsCleanup {
         var found = articles.byIds(List.of(id));
         if (found.isEmpty()) continue;
         var article = found.getFirst();
-        String synopsis = article.summary().isEmpty() ? "" : article.summary().getFirst();
-        if (TechFeeds.strictCategory(article.title(), topic) != null
-            || TechFeeds.strictCategory(synopsis, topic) != null) continue;
+        String url = article.sources().isEmpty() ? "" : article.sources().getFirst().url();
+        if (!GoogleNewsCollector.offTopicPage(url, article.title())
+            && TechFeeds.strictCategory(article.title(), topic) != null) continue;
         articles.delete(id);
         removed++;
         LOG.info("Google News: removida fora do tema [{}] {}", topic, article.title());

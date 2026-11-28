@@ -204,9 +204,15 @@ public class GoogleNewsCollector {
         continue;
       }
 
-      // O Google acha o termo em qualquer parte da página (menus, "leia também"). Só entra se o
-      // título ou a sinopse falarem de tecnologia.
-      String category = TechFeeds.strictCategory(title, topic);
+      // O Google acha o termo em qualquer parte da página (menus, "leia também"), e a sinopse de
+      // qualquer vídeo viral cita Instagram. Só entra se o próprio título falar de tecnologia.
+      String category =
+          offTopicPage(canonical, title) ? null : TechFeeds.strictCategory(title, topic);
+      if (category == null) {
+        stats.offTopic++;
+        markSeen(seen, topic, canonical);
+        continue;
+      }
       // A página serve de base para a sinopse; só vira corpo da matéria em host de texto aberto.
       String page = fetcher.pageText(canonical);
       String body =
@@ -216,12 +222,6 @@ public class GoogleNewsCollector {
       String synopsis = synopses.write(title, body, page, canonical, "").orElse(null);
       if (synopsis == null) { // Gemini ou página fora do ar: tenta de novo na próxima rodada
         stats.noSynopsis++;
-        continue;
-      }
-      if (category == null) category = TechFeeds.strictCategory(synopsis, topic);
-      if (category == null) {
-        stats.offTopic++;
-        markSeen(seen, topic, canonical);
         continue;
       }
       String outlet = parts[1].isBlank() ? link.getHost() : parts[1];
@@ -276,6 +276,18 @@ public class GoogleNewsCollector {
       }
     }
     return inserted;
+  }
+
+  /** Conteúdo patrocinado, resumos de vídeo do dia e transmissões ao vivo não são matérias. */
+  static boolean offTopicPage(String url, String title) {
+    String path = url.toLowerCase(Locale.ROOT);
+    String head = title.strip().toLowerCase(Locale.ROOT);
+    return path.contains("/especial-publicitario/")
+        || path.contains("publieditorial")
+        || path.contains("/patrocinado")
+        || path.matches("https?://[^/]+/[a-z]{2}/[^?#]*/edicao/.*")
+        || head.startsWith("vídeos do ")
+        || head.startsWith("ao vivo");
   }
 
   /**
