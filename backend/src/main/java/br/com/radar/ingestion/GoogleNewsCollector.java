@@ -22,8 +22,8 @@ import org.springframework.stereotype.Component;
 /**
  * Busca no Google News as matérias de cada tópico do app e importa as que o feed pode exibir.
  *
- * <p>O feed só mostra matérias de veículos brasileiros autorizados (ver ContentRepository.base).
- * A busca é restrita a esses sites, o link do Google é convertido no endereço real e a página da
+ * <p>O feed só mostra matérias de veículos brasileiros autorizados (ver ContentRepository.base). A
+ * busca é restrita a esses sites, o link do Google é convertido no endereço real e a página da
  * matéria serve de base para a sinopse. O texto completo só é guardado nos hosts de texto aberto
  * (padrão: Agência Brasil); nos demais a matéria fica com sinopse e link para o veículo. Matérias
  * já coletadas pelo RSS são ignoradas pela mesma chave de URL canônica.
@@ -97,7 +97,10 @@ public class GoogleNewsCollector {
       return;
     }
     long started = System.nanoTime();
-    LOG.info("Google News: rodada iniciada ({} tópicos, sites {})", GoogleNewsTopics.QUERIES.size(), sites);
+    LOG.info(
+        "Google News: rodada iniciada ({} tópicos, sites {})",
+        GoogleNewsTopics.QUERIES.size(),
+        sites);
     int total = 0;
     for (String topic : GoogleNewsTopics.QUERIES.keySet()) {
       var stats = new Stats();
@@ -159,7 +162,8 @@ public class GoogleNewsCollector {
         continue;
       }
 
-      var date = entry.getPublishedDate() == null ? entry.getUpdatedDate() : entry.getPublishedDate();
+      var date =
+          entry.getPublishedDate() == null ? entry.getUpdatedDate() : entry.getPublishedDate();
       if (date == null) continue;
       Instant published = date.toInstant();
       if (published.isAfter(now.plusSeconds(300)) || published.isBefore(now.minus(MAX_AGE)))
@@ -222,7 +226,8 @@ public class GoogleNewsCollector {
       }
       String outlet = parts[1].isBlank() ? link.getHost() : parts[1];
       String id = "rss-" + key.substring(0, 32);
-      int readingMinutes = body.isEmpty() ? 1 : Math.max(1, Math.min(120, (body.split("\\s+").length + 199) / 200));
+      int readingMinutes =
+          body.isEmpty() ? 1 : Math.max(1, Math.min(120, (body.split("\\s+").length + 199) / 200));
       var article =
           new Article(
               id,

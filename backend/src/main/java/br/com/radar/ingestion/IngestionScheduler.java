@@ -43,7 +43,8 @@ public class IngestionScheduler {
     try {
       collectAll();
     } finally {
-      LOG.info("Coleta RSS: rodada concluída em {}s", (System.nanoTime() - started) / 1_000_000_000);
+      LOG.info(
+          "Coleta RSS: rodada concluída em {}s", (System.nanoTime() - started) / 1_000_000_000);
     }
   }
 

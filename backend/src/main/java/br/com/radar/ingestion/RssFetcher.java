@@ -70,7 +70,8 @@ public class RssFetcher {
                 .GET()
                 .build(),
             2_000_000);
-    if (response.status() != 200) throw new IOException("Fonte retornou status " + response.status());
+    if (response.status() != 200)
+      throw new IOException("Fonte retornou status " + response.status());
     if (response.bytes() == null) throw new IOException("Feed maior que 2MB");
     return parse(response.bytes());
   }

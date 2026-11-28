@@ -898,7 +898,14 @@ class ApiIntegrationTest {
               json.convertValue(a, br.com.radar.content.ContentModels.Article.class));
           await(
               db.doc("imports", "test-" + id)
-                  .set(Map.of("articleId", id, "sourceId", "gnews-games", "url", "https://g1.globo.com/" + id)));
+                  .set(
+                      Map.of(
+                          "articleId",
+                          id,
+                          "sourceId",
+                          "gnews-games",
+                          "url",
+                          "https://g1.globo.com/" + id)));
         };
     String off = "gn-off-" + suffix, on = "gn-on-" + suffix, manual = "gn-manual-" + suffix;
     imported.accept(off, "Expectativa de vida dos brasileiros chega a quase 77 anos");

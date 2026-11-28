@@ -106,10 +106,13 @@ final class TechFeeds {
           new Rule(
               "regulacao",
               "antitrust|antitruste|lgpd|data protection|digital markets act|regulacao digital|regulamentacao de ia"),
-          new Rule("espaco", "spacex|nasa|starship|foguete[s]?|satellite[s]?|satelite[s]?|estacao espacial|astronauta[s]?|missao espacial|agencia espacial|telescopio[s]?|asteroide[s]?"),
+          new Rule(
+              "espaco",
+              "spacex|nasa|starship|foguete[s]?|satellite[s]?|satelite[s]?|estacao espacial|astronauta[s]?|missao espacial|agencia espacial|telescopio[s]?|asteroide[s]?"),
           new Rule("cripto", "bitcoin|crypto|criptomoeda[s]?|ethereum|blockchain"),
           new Rule(
-              "games", "gaming|games?|video games?|videogame[s]?|jogos eletronicos|esports?|e-sports?|playstation|xbox|nintendo|steam deck"),
+              "games",
+              "gaming|games?|video games?|videogame[s]?|jogos eletronicos|esports?|e-sports?|playstation|xbox|nintendo|steam deck"),
           new Rule(
               "dados",
               "sql|power bi|tableau|bigquery|snowflake|analista(?:s)? de dados|analise de dados|analitica de dados|engenharia de dados|ciencia de dados|visualizacao de dados|data analyst[s]?|data engineering|data analytics|data science|data visualization|data warehouse[s]?|business intelligence"),
@@ -156,8 +159,8 @@ final class TechFeeds {
   }
 
   /**
-   * Categoria pelas regras de tecnologia, sem cair no tópico padrão: null quando o texto não fala de
-   * tecnologia. Se o tópico preferido também bater, ele vence.
+   * Categoria pelas regras de tecnologia, sem cair no tópico padrão: null quando o texto não fala
+   * de tecnologia. Se o tópico preferido também bater, ele vence.
    */
   static String strictCategory(String text, String preferred) {
     String normalized = normalize(text == null ? "" : text);

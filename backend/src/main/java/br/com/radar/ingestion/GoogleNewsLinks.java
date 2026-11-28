@@ -26,7 +26,8 @@ import org.springframework.stereotype.Component;
 public class GoogleNewsLinks {
   private static final Pattern SIGNATURE = Pattern.compile("data-n-a-sg=\"([^\"]+)\"");
   private static final Pattern TIMESTAMP = Pattern.compile("data-n-a-ts=\"(\\d+)\"");
-  private static final Pattern ARTICLE_ID = Pattern.compile("^/(?:rss/)?articles/([A-Za-z0-9_-]+)$");
+  private static final Pattern ARTICLE_ID =
+      Pattern.compile("^/(?:rss/)?articles/([A-Za-z0-9_-]+)$");
   private static final URI BATCH =
       URI.create("https://news.google.com/_/DotsSplashUi/data/batchexecute");
 
@@ -105,7 +106,8 @@ public class GoogleNewsLinks {
       throws Exception {
     var future = http.sendAsync(request, handler);
     try {
-      return future.get(RssFetcher.TOTAL_TIMEOUT.toMillis(), java.util.concurrent.TimeUnit.MILLISECONDS);
+      return future.get(
+          RssFetcher.TOTAL_TIMEOUT.toMillis(), java.util.concurrent.TimeUnit.MILLISECONDS);
     } catch (java.util.concurrent.TimeoutException e) {
       future.cancel(true);
       throw e;

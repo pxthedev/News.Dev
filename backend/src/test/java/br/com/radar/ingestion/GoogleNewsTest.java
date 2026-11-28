@@ -38,7 +38,8 @@ class GoogleNewsTest {
   void splitsThePublisherSuffixFromTheTitle() {
     assertThat(GoogleNewsTopics.splitTitle("Governo lança plano de IA - Agência Brasil"))
         .containsExactly("Governo lança plano de IA", "Agência Brasil");
-    assertThat(GoogleNewsTopics.splitTitle("Título sem veículo")).containsExactly("Título sem veículo", "");
+    assertThat(GoogleNewsTopics.splitTitle("Título sem veículo"))
+        .containsExactly("Título sem veículo", "");
   }
 
   @Test
@@ -116,7 +117,8 @@ class GoogleNewsTest {
   void onlyConfiguredSitesAndSubdomains() {
     var sites = java.util.Set.of("g1.globo.com", "r7.com");
     org.junit.jupiter.api.Assertions.assertTrue(GoogleNewsCollector.onSite("g1.globo.com", sites));
-    org.junit.jupiter.api.Assertions.assertTrue(GoogleNewsCollector.onSite("Noticias.R7.com", sites));
+    org.junit.jupiter.api.Assertions.assertTrue(
+        GoogleNewsCollector.onSite("Noticias.R7.com", sites));
     org.junit.jupiter.api.Assertions.assertFalse(GoogleNewsCollector.onSite("globo.com", sites));
     org.junit.jupiter.api.Assertions.assertFalse(
         GoogleNewsCollector.onSite("g1.globo.com.evil.io", sites));
@@ -126,7 +128,8 @@ class GoogleNewsTest {
   @org.junit.jupiter.api.Test
   void offTopicHeadlinesHaveNoStrictCategory() {
     org.junit.jupiter.api.Assertions.assertNull(
-        TechFeeds.strictCategory("Expectativa de vida dos brasileiros chega a quase 77 anos", "games"));
+        TechFeeds.strictCategory(
+            "Expectativa de vida dos brasileiros chega a quase 77 anos", "games"));
     org.junit.jupiter.api.Assertions.assertEquals(
         "games", TechFeeds.strictCategory("Nintendo anuncia novo console", "games"));
     org.junit.jupiter.api.Assertions.assertEquals(
